@@ -1,0 +1,12 @@
+{
+  "name": "slop",
+  "version": "1.0.0",
+  "description": "SLOP (Symbolic LLM-Optimized Programming) - A language for hybrid human-machine code generation with contracts, range types, and C transpilation.",
+  "author": {
+    "name": "jcadam"
+  },
+  "license": "MIT",
+  "keywords": ["slop", "code-generation", "contracts", "range-types", "c-transpile"],
+  "commands": "./commands/",
+  "skills": "./skills/"
+}
