@@ -70,4 +70,4 @@ Once installed, the SLOP skill is automatically available. Ask Claude to:
 
 ## License
 
-MIT
+Apache
