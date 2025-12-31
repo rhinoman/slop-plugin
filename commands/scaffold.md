@@ -2,46 +2,132 @@ Generate a SLOP scaffold for: $ARGUMENTS
 
 ## Instructions
 
-Create SLOP code where implementations are stubbed out using `(hole ...)` expressions. Follow these rules:
+Create SLOP code where implementations are stubbed out using `(hole ...)` expressions.
 
-### Structure
-1. Include the module declaration with appropriate exports
-2. Define all necessary types (records, enums, unions) with full specifications
-3. For each function, provide complete annotations but stub the body with a hole
+**CRITICAL: Use exact SLOP syntax shown below. SLOP is NOT Scheme/Lisp.**
 
-### Required Annotations (do not stub these)
-- `@intent` - Human-readable purpose
-- `@spec` - Full type signature
-- `@pre` - Preconditions (when applicable)
-- `@post` - Postconditions using `$result` (when applicable)
-- `@pure` - Mark pure functions
-- `@example` - Include 2-3 examples per function
+## Required Syntax
+
+### Module Structure
+```slop
+;; file: example.slop
+(module example
+  (export fn1 fn2))
+
+(type MyType (Int 0 ..))
+
+(fn my-function ((in x MyType))
+  (@intent "Description")
+  (@spec ((MyType) -> Int))
+  (hole Int "implement this"))
+```
+
+### Function Syntax (REQUIRED FORMAT)
+```slop
+;; CORRECT - use (fn name ((mode param Type)...) ...)
+(fn add ((in a Int) (in b Int))
+  (@intent "Add two numbers")
+  (@spec ((Int Int) -> Int))
+  (@pure)
+  (@example (2 3) -> 5)
+  (hole Int "add a and b"))
+
+;; WRONG - do NOT use define, lambda, or other Lisp forms
+;; (define (add a b) ...)     ; WRONG
+;; (defun add (a b) ...)      ; WRONG
+```
+
+### Parameter Modes
+```slop
+(in x Type)    ; Read-only input (default)
+(out x Type)   ; Write-only output
+(mut x Type)   ; Read-write mutable
+```
+
+### Annotation Syntax (S-expressions, NOT comments)
+```slop
+(fn example ((in n Int))
+  ;; Annotations are S-expressions INSIDE the function, not comments
+  (@intent "Human-readable purpose")           ; REQUIRED
+  (@spec ((Int) -> Int))                       ; REQUIRED - note double parens
+  (@pre (> n 0))                               ; Precondition
+  (@post (>= $result 0))                       ; Postcondition ($result = return)
+  (@pure)                                      ; No side effects
+  (@example (5) -> 10)                         ; Use -> not =>
+  (@example (0) -> 0)
+  (hole Int "implementation"))
+```
+
+### @spec Format
+```slop
+;; Format: (@spec ((ParamType1 ParamType2...) -> ReturnType))
+(@spec ((Int) -> Int))                    ; One param
+(@spec ((Int Int) -> Bool))               ; Two params
+(@spec ((String) -> (Result Int Error)))  ; Result type
+(@spec (() -> Unit))                      ; No params
+```
+
+### @example Format
+```slop
+;; Format: (@example (arg1 arg2...) -> result)
+(@example (5) -> 10)                      ; Single arg
+(@example (2 3) -> 5)                     ; Multiple args
+(@example ("hello") -> 5)                 ; String arg
+(@example () -> 0)                        ; No args
+
+;; WRONG:
+;; (@example (5) => 10)    ; Wrong arrow
+;; @example (5) -> 10      ; Missing parens
+```
 
 ### Hole Syntax
-```lisp
-(hole ReturnType "description of what to implement"
+```slop
+(hole ReturnType "description"
   :complexity tier-N        ; tier-1 (trivial) to tier-4 (complex)
-  :context (var1 var2 fn1)  ; whitelist of identifiers the implementation may use
-  :required (fn1))          ; identifiers that MUST appear in the fill
+  :context (var1 var2 fn1)  ; identifiers the implementation may use
+  :required (fn1))          ; identifiers that MUST appear
 ```
 
-### Guidelines
-- Use named types consistently (define `(type Foo ...)` then use `Foo` in signatures)
-- Avoid overlapping enum variant names across different types
+## Complete Example
+
+```slop
+;; factorial.slop
+(module factorial
+  (export factorial main))
+
+(type Natural (Int 0 ..))
+
+(fn factorial ((in n Natural))
+  (@intent "Calculate factorial of n")
+  (@spec ((Natural) -> Natural))
+  (@pre (>= n 0))
+  (@post (>= $result 1))
+  (@pure)
+  (@example (0) -> 1)
+  (@example (1) -> 1)
+  (@example (5) -> 120)
+  (hole Natural "calculate n factorial recursively or iteratively"
+    :complexity tier-2
+    :context (n factorial)
+    :required ()))
+
+(fn main ()
+  (@intent "Print factorial of 10")
+  (@spec (() -> Unit))
+  (hole Unit "print factorial of 10"
+    :complexity tier-1
+    :context (factorial println)
+    :required (factorial)))
+```
+
+## Guidelines
+
+- Module name MUST match the filename (e.g., `foo.slop` contains `(module foo ...)`)
+- Define named types, then use them in signatures: `(type Age (Int 0 .. 150))` then `(in age Age)`
 - Quote enum variants in code: `'active` not `active`
-- Module name must match the intended filename
-- Set `:context` to the parameters and any helper functions available
-- Set `:required` only for functions that MUST be called (e.g., state mutations)
+- Use `:context` to whitelist available identifiers
+- Use `:required` only for functions that MUST be called
 
-### Validation
+## Output
 
-After writing the scaffold file, run:
-```bash
-slop check <filename>.slop
-```
-
-- `UnfilledHoleError` messages are **expected** and can be ignored (holes will be filled later)
-- Fix any other errors (type errors, syntax errors, undefined references) before considering the scaffold complete
-
-### Output
-Generate the complete `.slop` file with all types, constants, and function scaffolds. Validate with `slop check` and fix any non-hole errors.
+Generate the complete `.slop` file following the exact syntax above.

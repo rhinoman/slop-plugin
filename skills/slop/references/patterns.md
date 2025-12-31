@@ -190,7 +190,7 @@ Positional is shorter but named is clearer for records with many fields.
 (fn process-all ((arena Arena) (paths (List String)))
   (@spec ((Arena (List String)) -> (Result (List Data) Error)))
 
-  (let ((results (list-new arena)))
+  (let ((mut results (list-new arena Data)))
     (for-each (path paths)
       ;; ? returns early on error
       (let ((data (? (read-file arena path))))
@@ -203,7 +203,7 @@ Positional is shorter but named is clearer for records with many fields.
 ### Find Index Matching Predicate
 
 ```
-(let ((result -1))
+(let ((mut result -1))
   (for (i 0 SIZE)
     (when PREDICATE
       (do
@@ -215,7 +215,7 @@ Positional is shorter but named is clearer for records with many fields.
 ### Count Matching Elements
 
 ```
-(let ((count 0))
+(let ((mut count 0))
   (for (i 0 SIZE)
     (when PREDICATE
       (set! count (+ count 1))))
@@ -225,7 +225,7 @@ Positional is shorter but named is clearer for records with many fields.
 ### Sum Values
 
 ```
-(let ((total 0))
+(let ((mut total 0))
   (for (i 0 SIZE)
     (set! total (+ total ACCESSOR)))
   total)
@@ -234,7 +234,7 @@ Positional is shorter but named is clearer for records with many fields.
 ### Find Empty Slot
 
 ```
-(let ((idx -1))
+(let ((mut idx -1))
   (for (i 0 SIZE)
     (when (== (. (@ storage i) id) 0)
       (do
@@ -299,7 +299,7 @@ IMPORTANT: Quote the error variant!
   (@spec (((Ptr (List (Ptr User)))) -> Int))
   (@pure)
 
-  (let ((total 0))
+  (let ((mut total 0))
     (for-each (user users)
       (when (. user age)
         (set! total (+ total (. (. user age) value)))))
@@ -320,7 +320,7 @@ IMPORTANT: Quote the error variant!
 (fn find-first ((list (Ptr (List Int))) (pred (Fn (Int) -> Bool)))
   (@spec (((Ptr (List Int)) (Fn (Int) -> Bool)) -> (Option Int)))
 
-  (let ((i 0)
+  (let ((mut i 0)
         (len (. list len)))
     (while (< i len)
       (let ((val (@ (. list data) i)))
@@ -365,7 +365,7 @@ IMPORTANT: Quote the error variant!
   (let ((b (cast (Ptr RequestBuilder) (arena-alloc arena (sizeof RequestBuilder)))))
     (set! b arena arena)
     (set! b method 'GET)
-    (set! b headers (list-new arena))
+    (set! b headers (list-new arena Header))
     b))
 
 (fn request-method ((b (Ptr RequestBuilder)) (m Method))

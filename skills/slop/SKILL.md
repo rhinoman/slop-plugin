@@ -53,9 +53,31 @@ C Mapping: integers → `#define`, others → `static const`.
 ```
 (fn name ((in x Type)        ; Read-only (default) - pass by value
           (out result Type)  ; Write-only - pointer to uninitialized
-          (mut state Type))  ; Read-write - pointer to initialized
+          (mut state Type))  ; Mutable - value or pointer depending on Type
   ...)
 ```
+
+### Variables and Mutability
+
+```
+;; Immutable bindings (default) - set! is NOT allowed
+(let ((x 10)
+      (y 20))
+  (+ x y))
+
+;; Mutable bindings - set! IS allowed
+(let ((mut counter 0))
+  (set! counter (+ counter 1))
+  counter)
+
+;; Mutable with explicit type
+(let ((mut total Int 0))
+  (for (i 0 10)
+    (set! total (+ total i)))
+  total)
+```
+
+**Important**: `set!` on a variable requires the `mut` keyword in its binding.
 
 ### Types with Ranges
 
@@ -85,11 +107,16 @@ C Mapping: integers → `#define`, others → `static const`.
 (record (x T) (y U))   ; Struct
 (union (a T) (b U))    ; Tagged union
 
-;; Collection literals (explicit type preferred for clarity)
-(list Int 1 2 3)                ; List with explicit element type
+;; Collection literals - IMMUTABLE values
+(list Int 1 2 3)                ; Immutable list with explicit type
 (list 1 2 3)                    ; Inferred from first element
-(map String Int ("a" 1) ("b" 2)) ; Map with explicit key/value types
+(map String Int ("a" 1) ("b" 2)) ; Immutable map with explicit types
 (map ("a" 1) ("b" 2))           ; Inferred from first pair
+
+;; For mutable collections, use list-new/map-new with mut binding:
+(let ((mut items (list-new arena Int)))
+  (list-push items 1)           ; OK: items is mutable
+  items)
 
 ;; See references/types.md for complete type reference
 ```
@@ -159,9 +186,10 @@ The `@requires` annotation declares dependencies that must be provided before co
   (@alloc arena)
   ...)
 
-;; Scoped pointers (freed when scope ends)
-(let ((scoped (ScopedPtr Data) (create-data arena)))
-  (use scoped))  ; Freed at end of scope
+;; Mutable pointer for in-place modification
+(let ((mut conn (create-connection arena)))
+  (set! conn state 'connected)
+  conn)
 
 ;; Slices (borrowed views)
 (fn process ((data (Slice U8)))
@@ -310,14 +338,16 @@ SLOP                    C
 (string-eq a b) (string-slice s start end) (string-split arena s delim)
 
 ;; Lists
-(list-new arena Type)           ; Create empty typed list
-(list Type e1 e2...)            ; Literal with explicit type
-(list-push list item) (list-get list idx) (list-len list)
+(list-new arena Type)           ; Create empty mutable list
+(list Type e1 e2...)            ; Immutable literal
+(list-push list item)           ; Mutates list (requires mut binding)
+(list-get list idx) (list-len list)
 
 ;; Maps
-(map-new arena KeyType ValType)
-(map KeyType ValType (k1 v1)...)
-(map-put m k v) (map-get m k) (map-has m k)
+(map-new arena KeyType ValType) ; Create empty mutable map
+(map KeyType ValType (k1 v1)...)  ; Immutable literal
+(map-put m k v)                 ; Mutates map (requires mut binding)
+(map-get m k) (map-has m k)
 
 ;; Result
 (ok val) (error 'variant) (is-ok r) (unwrap r)
@@ -340,6 +370,8 @@ SLOP                    C
 7. Use (Result T E) for fallible operations
 8. Mark hole complexity for optimal model routing
 9. Quote error variants: `(error 'not-found)` not `(error not-found)`
+10. Use `mut` for mutable bindings: `(let ((mut x 0)) (set! x 1))`
+11. Use `list-new`/`map-new` with `mut` binding for mutable collections
 
 ## Scaffold Generation Guidelines
 

@@ -60,6 +60,7 @@ Files with unfilled holes will show `UnfilledHoleError` - this is expected for s
 
 ## Slash Commands
 
+- `/slop:init` - Initialize a new SLOP project with `slop.toml`
 - `/slop:scaffold <description>` - Generate SLOP functions/files with hole expressions as implementation stubs
 - `/slop:fill <file>` - Fill holes in a SLOP file, respecting `:context`, `:required`, and contracts
 - `/slop:verify <file>` - Verify contracts with Z3, analyze failures, suggest fixes

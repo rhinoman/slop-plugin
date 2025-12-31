@@ -221,12 +221,28 @@ Access bytes fields directly:
 (alias Handler (Fn (Request) -> Response))
 ```
 
+## Collection Mutability
+
+**Collection literals are immutable.** To mutate a collection, use `list-new`/`map-new` with a `mut` binding:
+
+```
+;; Immutable - cannot use list-push
+(let ((items (list Int 1 2 3)))
+  (list-get items 0))           ; OK: read-only access
+
+;; Mutable - can use list-push
+(let ((mut items (list-new arena Int)))
+  (list-push items 1)           ; OK: items is mutable
+  (list-push items 2)
+  items)
+```
+
 ## Collection Literal Type Inference
 
 When explicit type is provided, it is used directly:
 ```
-(list Int 1 2 3)              ; → (List Int)
-(map String Int ("a" 1))      ; → (Map String Int)
+(list Int 1 2 3)              ; → (List Int), immutable
+(map String Int ("a" 1))      ; → (Map String Int), immutable
 ```
 
 When type is omitted, inference follows these rules:

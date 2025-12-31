@@ -25,7 +25,7 @@ Run `slop verify` on the specified SLOP file(s) to check contract consistency us
 ### Common Failure Patterns
 
 **Postcondition not satisfied by implementation:**
-```lisp
+```slop
 ;; Problem: @post claims result > 0, but implementation can return 0
 (@post (> $result 0))
 (if (> x 0) x 0)  ; Returns 0 when x <= 0
@@ -37,7 +37,7 @@ Run `slop verify` on the specified SLOP file(s) to check contract consistency us
 ```
 
 **Precondition too weak:**
-```lisp
+```slop
 ;; Problem: Division by zero possible
 (@pre (>= y 0))  ; Allows y = 0
 (/ x y)
@@ -47,10 +47,11 @@ Run `slop verify` on the specified SLOP file(s) to check contract consistency us
 ```
 
 **Range type violation:**
-```lisp
+```slop
 ;; Problem: Result can exceed range bounds
 (type Percentage (Int 0 .. 100))
-(fn calc ((x Int)) -> Percentage
+(fn calc ((in x Int))
+  (@spec ((Int) -> Percentage))
   (* x 2))  ; Can exceed 100
 
 ;; Fix: Clamp or validate
