@@ -75,6 +75,8 @@ C Mapping: integers → `#define`, others → `static const`.
 (Array T 10)           ; Fixed-size array (stack allocated)
 (Slice T)              ; View into array/list
 (Ptr T)                ; Pointer to T
+(ScopedPtr T)          ; Scoped pointer (freed when scope ends)
+(OptPtr T)             ; Nullable pointer
 (Option T)             ; T or none
 (Result T E)           ; Success or error
 (Map K V)              ; Hash map
@@ -157,9 +159,9 @@ The `@requires` annotation declares dependencies that must be provided before co
   (@alloc arena)
   ...)
 
-;; Owning pointers
-(let ((owned (OwnPtr Data) (create-data arena)))
-  (transfer owned other-fn))  ; Ownership transferred
+;; Scoped pointers (freed when scope ends)
+(let ((scoped (ScopedPtr Data) (create-data arena)))
+  (use scoped))  ; Freed at end of scope
 
 ;; Slices (borrowed views)
 (fn process ((data (Slice U8)))
@@ -430,6 +432,19 @@ slop parse file.slop --holes      # Show holes in file
 ```bash
 slop check file.slop              # Type check a file
 ```
+
+### Contract Verification
+
+```bash
+slop verify file.slop             # Verify contracts with Z3 (requires z3-solver)
+```
+
+The verifier checks:
+- `@pre` and `@post` contract consistency
+- Range type bounds
+- Basic logical properties
+
+Note: Verifies contract consistency, not full implementation correctness.
 
 ### Hole Validation
 

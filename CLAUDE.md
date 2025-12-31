@@ -44,6 +44,7 @@ pip install -e .
 slop parse file.slop              # Parse and inspect
 slop parse file.slop --holes      # Show holes in file
 slop check file.slop              # Type check
+slop verify file.slop             # Verify contracts with Z3
 slop transpile file.slop -o out.c # Transpile to C
 slop build file.slop -o binary    # Full build (requires cc)
 ```
@@ -61,6 +62,7 @@ Files with unfilled holes will show `UnfilledHoleError` - this is expected for s
 
 - `/slop:scaffold <description>` - Generate SLOP functions/files with hole expressions as implementation stubs
 - `/slop:fill <file>` - Fill holes in a SLOP file, respecting `:context`, `:required`, and contracts
+- `/slop:verify <file>` - Verify contracts with Z3, analyze failures, suggest fixes
 
 ## Scaffold Generation Guidelines
 

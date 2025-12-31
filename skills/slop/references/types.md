@@ -172,11 +172,11 @@ Access bytes fields directly:
 
 ```
 (Ptr T)                 ; T*, borrowed reference
-(OwnPtr T)              ; T*, owning (freed on scope exit)
+(ScopedPtr T)           ; T*, scoped (freed when scope ends)
 (OptPtr T)              ; T*, nullable
 
 (type UserRef (Ptr User))
-(type OwnedUser (OwnPtr User))
+(type ScopedUser (ScopedPtr User))
 ```
 
 ## Function Types
