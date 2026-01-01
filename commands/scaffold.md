@@ -6,6 +6,8 @@ Create SLOP code where implementations are stubbed out using `(hole ...)` expres
 
 **CRITICAL: Use exact SLOP syntax shown below. SLOP is NOT Scheme/Lisp.**
 
+Run `slop ref` for the complete language reference if needed.
+
 ## Required Syntax
 
 ### Module Structure

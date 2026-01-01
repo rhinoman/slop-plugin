@@ -47,6 +47,8 @@ slop check file.slop              # Type check
 slop verify file.slop             # Verify contracts with Z3
 slop transpile file.slop -o out.c # Transpile to C
 slop build file.slop -o binary    # Full build (requires cc)
+slop ref                          # Language reference (for AI assistants)
+slop ref --list                   # List reference topics
 ```
 
 ### Hole Validation

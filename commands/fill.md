@@ -6,6 +6,19 @@ Read the specified SLOP file and fill each `(hole ...)` expression with a valid 
 
 **CRITICAL: Use exact SLOP syntax. SLOP is NOT Scheme/Lisp.**
 
+## MANDATORY: Validate Every Hole
+
+You MUST run `slop check-hole` for EVERY hole implementation before writing the file.
+
+```bash
+slop check-hole '<implementation>' -t '<HoleType>' -c <original-file.slop>
+```
+
+- Do NOT skip this step
+- Do NOT write the file until ALL holes pass validation
+- If validation fails, fix the implementation and re-validate
+- Skipping validation will result in type errors and broken code
+
 ## Understanding :context and :required
 
 **These are STRICT constraints, not suggestions.**
@@ -228,10 +241,12 @@ Before writing each implementation, explicitly verify:
 
 ## Built-ins Reference
 
-- Arithmetic: `+`, `-`, `*`, `/`, `%`
+Run `slop ref` for the complete language reference.
+
+- Arithmetic: `+`, `-`, `*`, `/`, `%`, `min`, `max`
 - Comparison: `<`, `>`, `<=`, `>=`, `==`, `!=`
 - Logic: `and`, `or`, `not`
-- Control: `if`, `cond`, `match`, `let`, `do`, `when`, `unless`
+- Control: `if`, `cond`, `match`, `let`, `let*`, `do`, `when`, `unless`
 - Loops: `for`, `for-each`, `while`, `break`, `continue`, `return`
 - Lists: `list-new`, `list-push`, `list-get`, `list-len`, `list`
 - Maps: `map-new`, `map-put`, `map-get`, `map-has`, `map`
@@ -254,12 +269,12 @@ Before writing each implementation, explicitly verify:
    - Review the enclosing function's @intent, @spec, @pre, @post, @example
    - Generate an implementation using ONLY :context identifiers and built-ins
    - Ensure all :required identifiers appear in the output
-   - **Validate the implementation** by running:
+   - **MUST validate** by running:
      ```bash
      slop check-hole '<implementation>' -t '<HoleType>' -c <original-file.slop>
      ```
-   - If validation fails, fix the implementation and re-validate
-3. Only after ALL holes pass validation, write the filled file
+   - If validation fails, fix and re-validate until it passes
+3. **ONLY after ALL holes pass validation**, write the filled file
 4. Run `slop check` on the final file to confirm
 
 ### Validation Example

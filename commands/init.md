@@ -56,10 +56,27 @@ provider = "ollama"
 model = "llama3:8b"
 ```
 
+### Starter File Template
+
+Create `src/main.slop` (or the configured entry point) with this exact SLOP syntax:
+
+```slop
+;; main.slop - Entry point
+(module main
+  (export main))
+
+(fn main ()
+  (@intent "Program entry point")
+  (@spec (() -> Unit))
+  (println "Hello, SLOP!"))
+```
+
+**CRITICAL**: Use exact SLOP syntax - `(fn name () ...)` not `(defun ...)` or `(define ...)`.
+
 ### After Creation
 
 1. Create the entry point directory if it doesn't exist (e.g., `src/`)
-2. Optionally create a minimal starter file at the entry point
+2. Create the starter file using the template above
 3. Show the user what was created and next steps:
    ```
    Created slop.toml

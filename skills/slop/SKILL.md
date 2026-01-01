@@ -65,6 +65,11 @@ C Mapping: integers → `#define`, others → `static const`.
       (y 20))
   (+ x y))
 
+;; Sequential bindings - later bindings can reference earlier ones
+(let* ((x 10)
+       (y (+ x 5)))    ; y can use x
+  (+ x y))             ; → 25
+
 ;; Mutable bindings - set! IS allowed
 (let ((mut counter 0))
   (set! counter (+ counter 1))
@@ -324,6 +329,10 @@ SLOP                    C
 ## Standard Library
 
 ```
+;; Arithmetic
+(+ a b) (- a b) (* a b) (/ a b) (% a b)
+(min a b) (max a b)      ; Minimum/maximum of two values
+
 ;; Memory
 (arena-new size) (arena-alloc arena size) (arena-free arena)
 (with-arena size body)   ; Scoped arena, implicit 'arena' var
@@ -505,6 +514,34 @@ slop derive schema.json -o types.slop  # Generate types from schema
 slop fill file.slop -o filled.slop     # Fill holes with LLM
 slop test file.slop                    # Run @example and @property tests
 ```
+
+### Language Reference (for AI)
+
+```bash
+slop ref                  # Full language reference
+slop ref types            # Type system reference
+slop ref --list           # List available topics
+```
+
+Use `slop ref` for quick lookups of syntax, built-ins, and patterns.
+
+## Common Mistakes
+
+These functions/patterns do NOT exist in SLOP - use the alternatives:
+
+| Don't Use | Use Instead |
+|-----------|-------------|
+| `print-int n` | `(println (int-to-string arena n))` |
+| `(block ...)` | `(do ...)` |
+| `(begin ...)` | `(do ...)` |
+| `(progn ...)` | `(do ...)` |
+| `list-append` | `(list-push list elem)` |
+| `list-add` | `(list-push list elem)` |
+| `map-set` | `(map-put map key val)` |
+| `hash-get` | `(map-get map key)` |
+| `strlen s` | `(string-len s)` |
+| `malloc` | `(arena-alloc arena size)` |
+| `arr.length` | Arrays are fixed size - use declared size |
 
 ## See Also
 
