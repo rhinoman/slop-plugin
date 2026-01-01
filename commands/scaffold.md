@@ -142,6 +142,7 @@ Run `slop ref` for the complete language reference if needed.
 - Use `:context` to whitelist available identifiers
 - Use `:required` only for functions that MUST be called
 - Entry point `main` must return `Int` (exit code), not `Unit`
+- **File placement**: If a `src/` directory exists in the project, place generated module files there (e.g., `src/mymodule.slop`). Otherwise, place files in the project root.
 
 ## Output
 
