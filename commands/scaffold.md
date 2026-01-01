@@ -63,8 +63,8 @@ Run `slop ref` for the complete language reference if needed.
   ;; Annotations are S-expressions INSIDE the function, not comments
   (@intent "Human-readable purpose")           ; REQUIRED
   (@spec ((Int) -> Int))                       ; REQUIRED - note double parens
-  (@pre (> n 0))                               ; Precondition
-  (@post (>= $result 0))                       ; Postcondition ($result = return)
+  (@pre {n > 0})                               ; Precondition (infix preferred)
+  (@post {$result >= 0})                       ; Postcondition ($result = return)
   (@pure)                                      ; No side effects
   (@example (5) -> 10)                         ; Use -> not =>
   (@example (0) -> 0)
@@ -113,8 +113,8 @@ Run `slop ref` for the complete language reference if needed.
   (fn factorial ((in n Natural))
     (@intent "Calculate factorial of n")
     (@spec ((Natural) -> Natural))
-    (@pre (>= n 0))
-    (@post (>= $result 1))
+    (@pre {n >= 0})
+    (@post {$result >= 1})
     (@pure)
     (@example (0) -> 1)
     (@example (1) -> 1)

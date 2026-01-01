@@ -27,11 +27,11 @@ Run `slop verify` on the specified SLOP file(s) to check contract consistency us
 **Postcondition not satisfied by implementation:**
 ```slop
 ;; Problem: @post claims result > 0, but implementation can return 0
-(@post (> $result 0))
+(@post {$result > 0})
 (if (> x 0) x 0)  ; Returns 0 when x <= 0
 
 ;; Fix: Adjust postcondition or implementation
-(@post (>= $result 0))  ; Weaker postcondition
+(@post {$result >= 0})  ; Weaker postcondition
 ;; OR
 (if (> x 0) x 1)  ; Ensure result > 0
 ```
@@ -39,11 +39,11 @@ Run `slop verify` on the specified SLOP file(s) to check contract consistency us
 **Precondition too weak:**
 ```slop
 ;; Problem: Division by zero possible
-(@pre (>= y 0))  ; Allows y = 0
+(@pre {y >= 0})  ; Allows y = 0
 (/ x y)
 
 ;; Fix: Strengthen precondition
-(@pre (> y 0))
+(@pre {y > 0})
 ```
 
 **Range type violation:**

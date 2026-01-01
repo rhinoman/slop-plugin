@@ -13,9 +13,8 @@ Contracts are central to SLOP. They enable:
 (fn divide ((in a Int) (in b Int))
   (@intent "Safely divide two integers")
   (@spec ((Int Int) -> (Result Int DivError)))
-  (@pre (!= b 0))
-  (@post (or (is-error $result)
-             (== (* b (unwrap $result)) a)))
+  (@pre {b != 0})
+  (@post {(is-error $result) or (b * (unwrap $result)) == a})
   (@pure)
   ;; Multiple examples - cover normal cases and edge cases
   (@example (10 2) -> (ok 5))
@@ -34,7 +33,7 @@ Mark functions with `@pure` when they have no side effects:
   (@intent "Get string length")
   (@spec ((String) -> (Int 0 ..)))
   (@pure)
-  (@post (>= $result 0))
+  (@post {$result >= 0})
   (@example ("hello") -> 5)
   (@example ("") -> 0)
   (@example ("a") -> 1)
@@ -49,8 +48,8 @@ Use `$result` to refer to the return value:
 (fn clamp ((in x Int) (in lo Int) (in hi Int))
   (@intent "Clamp value to range")
   (@spec ((Int Int Int) -> Int))
-  (@pre (<= lo hi))
-  (@post (and (>= $result lo) (<= $result hi)))
+  (@pre {lo <= hi})
+  (@post {$result >= lo and $result <= hi})
   (@pure)
   (@example (5 0 10) -> 5)
   (@example (-5 0 10) -> 0)
@@ -79,7 +78,7 @@ Use `$result` to refer to the return value:
 (fn parse-int ((in s String) (out result Int))
   (@intent "Parse string to int, store in result")
   (@spec ((String Int) -> Bool))
-  (@pre (> (string-len s) 0))
+  (@pre {(string-len s) > 0})
   (let ((val (string-to-int s)))
     (if (is-some val)
       (do (set! result (unwrap val)) true)
@@ -92,7 +91,7 @@ Use `$result` to refer to the return value:
 (fn increment ((mut counter Int))
   (@intent "Increment counter in place")
   (@spec ((Int) -> Unit))
-  (@pre (< counter 2147483647))
+  (@pre {counter < 2147483647})
   (set! counter (+ counter 1)))
 ```
 
@@ -118,8 +117,8 @@ For functions that allocate:
 (fn create-user ((arena Arena) (name String) (email String))
   (@intent "Create a new user")
   (@spec ((Arena String String) -> (Ptr User)))
-  (@pre (!= arena nil))
-  (@pre (> (string-len name) 0))
+  (@pre {arena != nil})
+  (@pre {(string-len name) > 0})
   (@alloc arena)
 
   (let ((user (cast (Ptr User) (arena-alloc arena (sizeof User)))))
@@ -336,7 +335,7 @@ IMPORTANT: Quote the error variant!
 (fn validate-user ((input (Ptr CreateUserInput)))
   (@intent "Validate user input")
   (@spec (((Ptr CreateUserInput)) -> (Result Unit ValidationError)))
-  (@pre (!= input nil))
+  (@pre {input != nil})
   (@pure)
 
   (cond
@@ -396,7 +395,7 @@ IMPORTANT: Quote the error variant!
 (fn conn-transition ((conn (Ptr Connection)) (event Event))
   (@intent "Handle state transition")
   (@spec (((Ptr Connection) Event) -> (Result Unit ConnError)))
-  (@pre (!= conn nil))
+  (@pre {conn != nil})
 
   (match (tuple (. conn state) event)
     ;; disconnected + connect → connecting

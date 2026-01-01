@@ -143,9 +143,34 @@ Always specify when possible - they are essential to SLOP's verification story.
 ```
 (@pre condition)           ; Precondition - REQUIRED for non-trivial functions
 (@post condition)          ; Postcondition ($result = return value)
+(@assume condition)        ; Trusted axiom for verification (e.g., FFI behavior)
 (@pure)                    ; No side effects, deterministic
 (@example (args) -> result) ; Executable test case - include multiple!
 (@alloc arena)             ; Memory allocation strategy
+```
+
+#### Infix Notation for Contracts (Preferred)
+
+Contracts support infix notation using curly braces. **Prefer infix for scaffolds** as it's more readable:
+
+```
+;; Infix notation - PREFERRED for scaffolds
+(@pre {x > 0})
+(@pre {x >= 0 and x <= 100})
+(@post {$result == a + b})
+
+;; Prefix notation (also valid)
+(@pre (> x 0))
+(@post (== $result (+ a b)))
+```
+
+**Infix precedence** (high to low): `*, /, %` → `+, -` → comparisons → `and` → `or`
+
+**Grouping and function calls**:
+```
+(@pre {(a + b) * c > 0})           ; Use () for grouping
+(@pre {(len arr) > 0})             ; Use prefix for function calls
+(@post {$result >= (min a b)})     ; Mix infix operators with prefix calls
 ```
 
 Examples are especially important - they serve as:
@@ -322,8 +347,8 @@ SLOP                    C
 (Ptr User)         →    User*
 (. user name)      →    user->name (auto-detects pointer)
 (arena-alloc ...)  →    slop_arena_alloc(...)
-(@pre cond)        →    SLOP_PRE(cond, "...")
-(@post cond)       →    SLOP_POST(cond, "...")
+(@pre {x > 0})     →    SLOP_PRE(x > 0, "x > 0")
+(@post {$result > 0}) → SLOP_POST(result > 0, "result > 0")
 ```
 
 ## Standard Library
@@ -372,15 +397,16 @@ SLOP                    C
 
 1. Always include @intent and @spec
 2. Use @pre/@post to specify contracts for all non-trivial functions
-3. Include @example annotations - at least 2-3 per function
-4. Mark pure functions with @pure for optimization and testing
-5. Use range types to constrain values
-6. Pass Arena as first param for allocating functions
-7. Use (Result T E) for fallible operations
-8. Mark hole complexity for optimal model routing
-9. Quote error variants: `(error 'not-found)` not `(error not-found)`
-10. Use `mut` for mutable bindings: `(let ((mut x 0)) (set! x 1))`
-11. Use `list-new`/`map-new` with `mut` binding for mutable collections
+3. **Prefer infix notation for contracts**: `(@pre {x > 0})` not `(@pre (> x 0))`
+4. Include @example annotations - at least 2-3 per function
+5. Mark pure functions with @pure for optimization and testing
+6. Use range types to constrain values
+7. Pass Arena as first param for allocating functions
+8. Use (Result T E) for fallible operations
+9. Mark hole complexity for optimal model routing
+10. Quote error variants: `(error 'not-found)` not `(error not-found)`
+11. Use `mut` for mutable bindings: `(let ((mut x 0)) (set! x 1))`
+12. Use `list-new`/`map-new` with `mut` binding for mutable collections
 
 ## Scaffold Generation Guidelines
 
