@@ -11,17 +11,28 @@ Run `slop ref` for the complete language reference if needed.
 ## Required Syntax
 
 ### Module Structure
+
+**CRITICAL: ALL definitions (types, functions, constants) must be INSIDE the module form.**
+
 ```slop
 ;; file: example.slop
 (module example
-  (export fn1 fn2))
+  (export fn1 fn2)
 
-(type MyType (Int 0 ..))
+  (type MyType (Int 0 ..))
 
-(fn my-function ((in x MyType))
-  (@intent "Description")
-  (@spec ((MyType) -> Int))
-  (hole Int "implement this"))
+  (fn my-function ((in x MyType))
+    (@intent "Description")
+    (@spec ((MyType) -> Int))
+    (hole Int "implement this")))  ; <-- module closes AFTER all definitions
+```
+
+```slop
+;; WRONG - definitions outside module:
+(module example
+  (export fn1))
+
+(fn fn1 ...)  ; ERROR: outside module form
 ```
 
 ### Function Syntax (REQUIRED FORMAT)
@@ -95,40 +106,42 @@ Run `slop ref` for the complete language reference if needed.
 ```slop
 ;; factorial.slop
 (module factorial
-  (export factorial main))
+  (export factorial main)
 
-(type Natural (Int 0 ..))
+  (type Natural (Int 0 ..))
 
-(fn factorial ((in n Natural))
-  (@intent "Calculate factorial of n")
-  (@spec ((Natural) -> Natural))
-  (@pre (>= n 0))
-  (@post (>= $result 1))
-  (@pure)
-  (@example (0) -> 1)
-  (@example (1) -> 1)
-  (@example (5) -> 120)
-  (hole Natural "calculate n factorial recursively or iteratively"
-    :complexity tier-2
-    :context (n factorial)
-    :required ()))
+  (fn factorial ((in n Natural))
+    (@intent "Calculate factorial of n")
+    (@spec ((Natural) -> Natural))
+    (@pre (>= n 0))
+    (@post (>= $result 1))
+    (@pure)
+    (@example (0) -> 1)
+    (@example (1) -> 1)
+    (@example (5) -> 120)
+    (hole Natural "calculate n factorial recursively or iteratively"
+      :complexity tier-2
+      :context (n factorial)
+      :required ()))
 
-(fn main ()
-  (@intent "Print factorial of 10")
-  (@spec (() -> Unit))
-  (hole Unit "print factorial of 10"
-    :complexity tier-1
-    :context (factorial println)
-    :required (factorial)))
+  (fn main ()
+    (@intent "Print factorial of 10")
+    (@spec (() -> Int))
+    (hole Int "print factorial of 10 and return 0"
+      :complexity tier-1
+      :context (factorial println)
+      :required (factorial))))
 ```
 
 ## Guidelines
 
+- **ALL definitions INSIDE module**: Every `(type)`, `(fn)`, `(const)` must be inside `(module ... )`
 - Module name MUST match the filename (e.g., `foo.slop` contains `(module foo ...)`)
 - Define named types, then use them in signatures: `(type Age (Int 0 .. 150))` then `(in age Age)`
 - Quote enum variants in code: `'active` not `active`
 - Use `:context` to whitelist available identifiers
 - Use `:required` only for functions that MUST be called
+- Entry point `main` must return `Int` (exit code), not `Unit`
 
 ## Output
 
