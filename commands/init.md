@@ -63,12 +63,13 @@ Create `src/main.slop` (or the configured entry point) with this exact SLOP synt
 ```slop
 ;; main.slop - Entry point
 (module main
-  (export main))
+  (export main)
 
-(fn main ()
-  (@intent "Program entry point")
-  (@spec (() -> Unit))
-  (println "Hello, SLOP!"))
+  (fn main ()
+    (@intent "Program entry point")
+    (@spec (() -> Int))
+    (println "Hello, SLOP!")
+    0))
 ```
 
 **CRITICAL**: Use exact SLOP syntax - `(fn name () ...)` not `(defun ...)` or `(define ...)`.
