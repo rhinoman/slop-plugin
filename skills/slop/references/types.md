@@ -132,6 +132,35 @@ Access bytes fields directly:
   (map-get scores "alice"))  ; → (some 100)
 ```
 
+## Concurrency Types
+
+```
+(Chan T)                ; Typed channel for communication
+(Thread T)              ; Thread handle returning T when joined
+
+(type MessageChan (Ptr (Chan String)))
+(type WorkerThread (Ptr (Thread Int)))
+```
+
+Channel and thread creation functions return pointers:
+```
+(chan arena)            ; → (Ptr (Chan T))
+(chan-buffered arena n) ; → (Ptr (Chan T))
+(spawn arena func)      ; → (Ptr (Thread T))
+```
+
+Channels enable safe communication between threads:
+```
+(with-arena 4096
+  (let ((ch (chan arena)))
+    (spawn arena (fn ()
+      (send ch 42)
+      0))
+    (match (recv ch)
+      ((ok msg) (println (int-to-string arena msg)))
+      ((error e) (println "channel error")))))
+```
+
 ## Algebraic Types
 
 ### Enums
@@ -219,6 +248,21 @@ Access bytes fields directly:
 (alias UserId (Int 1 ..))
 (alias Email (String 5 .. 255))
 (alias Handler (Fn (Request) -> Response))
+```
+
+## FFI-Only Types
+
+```
+Char                    ; C char type for FFI interop
+```
+
+`Char` is distinct from `I8` and `U8`. Use it when interfacing with C functions
+that expect `char*` parameters:
+
+```
+(ffi "string.h"
+  (strlen ((s (Ptr Char))) U64)
+  (strcpy ((dest (Ptr Char)) (src (Ptr Char))) (Ptr Char)))
 ```
 
 ## Collection Mutability

@@ -453,3 +453,99 @@ IMPORTANT: Quote the error variant!
     (SHA256 (. data ptr) (. data len) out)
     (bytes-from-ptr out 32)))
 ```
+
+## Concurrency Patterns
+
+### Spawn and Join
+
+```
+(fn parallel-compute ((arena Arena) (items (List Int)))
+  (@intent "Process items in parallel")
+  (@spec ((Arena (List Int)) -> (List Int)))
+
+  (let ((mut threads (list-new arena (Thread Int))))
+    ;; Spawn workers
+    (for-each (item items)
+      (list-push threads
+        (spawn arena (fn () (expensive-compute item)))))
+
+    ;; Collect results
+    (let ((mut results (list-new arena Int)))
+      (for-each (t threads)
+        (list-push results (join t)))
+      results)))
+```
+
+### Channel Communication
+
+```
+(fn producer-consumer ((arena Arena))
+  (@intent "Demonstrate channel communication")
+  (@spec ((Arena) -> Unit))
+
+  (let ((ch (chan-buffered arena 10)))
+    ;; Producer thread
+    (spawn arena (fn ()
+      (for (i 0 10)
+        (send ch i))
+      (chan-close ch)
+      0))
+
+    ;; Consumer (main thread)
+    (let ((mut running true))
+      (while running
+        (match (try-recv ch)
+          ((ok val) (println (int-to-string arena val)))
+          ((error 'closed) (set! running false))
+          ((error 'would-block) unit))))))
+```
+
+### Spawn with Channel
+
+The `spawn-with-chan` function spawns a thread that receives a channel as its argument.
+Useful for worker patterns where the thread communicates via the channel.
+
+```
+;; Worker function signature: takes channel, returns Int
+(fn worker ((ch (Ptr (Chan Int))))
+  (@intent "Process values from channel until closed")
+  (@spec (((Ptr (Chan Int))) -> Int))
+  (let ((mut total 0)
+        (mut running true))
+    (while running
+      (match (try-recv ch)
+        ((ok val) (set! total (+ total val)))
+        ((error 'closed) (set! running false))
+        ((error 'would-block) unit)))  ;; Spin if empty
+    total))
+
+;; Spawn the worker with its channel
+(fn start-worker ((arena Arena))
+  (@intent "Create channel and spawn worker thread")
+  (@spec ((Arena) -> (Ptr ThreadWithChan)))
+  (let ((ch (chan-buffered arena 10)))
+    (spawn-with-chan arena worker ch)))
+```
+
+### Worker Pool
+
+```
+(type Job (record
+  (id Int)
+  (data (Ptr Bytes))))
+
+(fn worker-pool ((arena Arena) (jobs (Ptr (Chan Job))) (results (Ptr (Chan Int))))
+  (@intent "Process jobs from channel, send results back")
+  (@spec ((Arena (Ptr (Chan Job)) (Ptr (Chan Int))) -> Unit))
+
+  (let ((mut running true))
+    (while running
+      (match (try-recv jobs)
+        ((ok job)
+          (let ((result (process-job arena job)))
+            (send results result)))
+        ((error 'closed)
+          (set! running false))
+        ((error 'would-block)
+          unit)))))  ;; Continue polling
+```

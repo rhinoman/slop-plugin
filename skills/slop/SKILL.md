@@ -108,6 +108,8 @@ C Mapping: integers → `#define`, others → `static const`.
 (Result T E)           ; Success or error
 (Map K V)              ; Hash map
 (Set T)                ; Hash set
+(Chan T)               ; Typed channel (concurrency)
+(Thread T)             ; Thread handle returning T
 (enum a b c)           ; Enumeration
 (record (x T) (y U))   ; Struct
 (union (a T) (b U))    ; Tagged union
@@ -146,7 +148,9 @@ Always specify when possible - they are essential to SLOP's verification story.
 (@assume condition)        ; Trusted axiom for verification (e.g., FFI behavior)
 (@pure)                    ; No side effects, deterministic
 (@example (args) -> result) ; Executable test case - include multiple!
-(@alloc arena)             ; Memory allocation strategy
+(@alloc arena)             ; Function allocates in arena
+(@alloc static)            ; Returns static/global data
+(@alloc none)              ; Does not allocate
 ```
 
 #### Infix Notation for Contracts (Preferred)
@@ -182,6 +186,7 @@ Examples are especially important - they serve as:
 
 ```
 (@property (forall (x T) expr))   ; Property assertion
+(@deprecated "message")           ; Deprecation notice
 (@generation-mode mode)           ; deterministic|template|llm
 (@derived-from "path")            ; Source tracking
 (@generated-by src :version v)    ; Generation metadata
@@ -228,14 +233,28 @@ The `@requires` annotation declares dependencies that must be provided before co
 
 ### Holes (For LLM Generation)
 
+Two modes: **generation** (create new code) and **refactoring** (improve existing code).
+
 ```
+;; Generation mode - create new implementation
 (hole Type "prompt")
 (hole Type "prompt"
   :complexity tier-2          ; tier-1 to tier-4
   :context (var1 var2 fn1)    ; Whitelist of available identifiers
   :required (var1 fn1)        ; Identifiers that must appear in output
   :examples ((in) -> out))
+
+;; Refactoring mode - improve existing code
+(hole Type "prompt"
+  existing-code-expression    ; Pass existing code to improve
+  :complexity tier-3)
 ```
+
+**Complexity Tiers:**
+- `tier-1`: 1-3B models (trivial: simple arithmetic, field access)
+- `tier-2`: 7-8B models (simple conditionals, result construction)
+- `tier-3`: 13-34B models (loops, multiple conditions, state)
+- `tier-4`: 70B+ models (algorithms, complex state machines)
 
 ### Pattern Syntax
 
@@ -317,6 +336,11 @@ literal                     ; Literal match
 
 ;; C inline escape hatch
 (c-inline "SOME_C_CONSTANT")
+
+;; FFI-only type: Char
+;; Use Char for C char* parameters (distinct from I8/U8)
+(ffi "string.h"
+  (strcpy ((dest (Ptr Char)) (src (Ptr Char))) (Ptr Char)))
 ```
 
 Example:
@@ -391,6 +415,17 @@ SLOP                    C
 
 ;; Time
 (now-ms) (sleep-ms ms)
+
+;; Concurrency (thread library)
+(chan arena)                ; Create unbuffered channel → (Ptr (Chan T))
+(chan-buffered arena cap)   ; Create buffered channel → (Ptr (Chan T))
+(chan-close ch)             ; Close channel
+(send ch value)             ; Send value (blocks if full) → (Result Unit ChanError)
+(recv ch)                   ; Receive value (blocks if empty) → (Result T ChanError)
+(try-recv ch)               ; Non-blocking receive → (Result T ChanError)
+(spawn arena func)          ; Spawn thread running func → (Ptr (Thread T))
+(spawn-with-chan arena func ch) ; Spawn thread with channel arg → (Ptr ThreadWithChan)
+(join thread)               ; Wait for thread, get result
 ```
 
 ## Generation Guidelines
@@ -467,12 +502,22 @@ When generating SLOP scaffolds (files with holes for LLM filling):
 (module petstore ...)  ;; BAD - resolver won't find it
 ```
 
+## Verification Levels
+
+SLOP provides multiple levels of verification:
+
+1. **Parse-time**: S-expression well-formed
+2. **Generation-time**: LLM self-check against constraints
+3. **Compile-time**: Type checking, range analysis, contract consistency, exhaustiveness
+4. **Test-time**: `@example` execution, `@property` testing
+5. **Runtime (debug)**: Assertion checks, bounds checking
+
 ## Validation
 
 After generating SLOP files, run the type checker:
 
 ```bash
-uv run slop check path/to/file.slop
+slop check path/to/file.slop
 ```
 
 **Expected behavior with holes:**
@@ -532,6 +577,11 @@ echo '(ok value)' | slop check-hole -t '(Result T E)'
 slop transpile file.slop -o output.c   # Transpile to C
 slop build file.slop -o binary         # Full build (requires cc)
 ```
+
+**Build Modes:**
+- **Debug**: `-g -DSLOP_DEBUG` - runtime contract checks enabled
+- **Release**: `-O3 -DNDEBUG` - contract checks removed for speed
+- **Safe**: `-O2 -DSLOP_SAFE` - contract checks with optimization
 
 ### Other Commands
 

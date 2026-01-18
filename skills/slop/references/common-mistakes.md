@@ -39,6 +39,17 @@ These functions/patterns do NOT exist in SLOP - use the alternatives:
 (error invalid-input)
 ```
 
+### ChanError Variants Are Quoted Too
+
+```lisp
+;; When matching channel errors:
+(match (try-recv ch)
+  ((ok val) (use val))
+  ((error 'closed) (handle-closed))
+  ((error 'would-block) (retry-later))
+  ((error 'send-on-closed) (handle-send-error)))
+```
+
 ### Enum Values in Match
 
 For simple enums (no data), use bare variant names in match:
@@ -183,4 +194,54 @@ For simple enums (no data), use bare variant names in match:
 (match status
   (Active (println "active"))
   (Inactive (println "inactive")))
+```
+
+## Concurrency
+
+### Channel Operations Return Results
+
+```lisp
+;; WRONG - ignoring Result type
+(let ((val (recv ch)))   ; val is (Result Int ChanError), not Int
+  (+ val 1))
+
+;; CORRECT - unwrap or match the result
+(match (recv ch)
+  ((ok val) (+ val 1))
+  ((error e) 0))
+
+;; Or with ? for early return
+(let ((val (? (recv ch))))
+  (+ val 1))
+```
+
+### Spawn Functions Must Return Int
+
+```lisp
+;; WRONG - function returns Unit
+(spawn arena (fn ()
+  (println "hello")))
+
+;; CORRECT - function must return Int (exit code)
+(spawn arena (fn ()
+  (println "hello")
+  0))
+```
+
+### Use spawn-with-chan for Channel Workers
+
+```lisp
+;; WRONG - channel not accessible in spawned thread
+(let ((ch (chan arena)))
+  (spawn arena (fn ()
+    (send ch 42)   ; ch not in scope!
+    0)))
+
+;; CORRECT - use spawn-with-chan to pass channel
+(let ((ch (chan arena)))
+  (spawn-with-chan arena
+    (fn ((ch (Ptr (Chan Int))))
+      (send ch 42)
+      0)
+    ch))
 ```

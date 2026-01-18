@@ -6,6 +6,58 @@ Read the specified SLOP file and fill each `(hole ...)` expression with a valid 
 
 **CRITICAL: Use exact SLOP syntax. SLOP is NOT Scheme/Lisp.**
 
+## Parallel Hole Filling with Tiered Models
+
+Fill holes in parallel using the Task tool, with model selection based on complexity tier:
+
+| Tier | Model | Description |
+|------|-------|-------------|
+| tier-1 | haiku | Trivial implementations (simple arithmetic, field access) |
+| tier-2 | sonnet | Moderate complexity (loops, conditionals) |
+| tier-3 | sonnet | Higher complexity (nested logic, multiple steps) |
+| tier-4 | opus | Complex algorithms (fallback to sonnet if opus unavailable) |
+
+### Execution Strategy
+
+1. **Parse all holes** from the file first
+2. **Group by tier** and launch parallel Task agents for each hole
+3. **Each agent must**:
+   - Generate an implementation respecting :context and :required
+   - Run `slop check-hole` to validate
+   - Return the validated implementation or error status
+
+### Escalation on Failure
+
+If a model fails to produce a valid implementation after **2 attempts**, escalate to the next higher model:
+
+- haiku (tier-1) → sonnet → opus
+- sonnet (tier-2/3) → opus
+- opus (tier-4) → report failure (no higher model available)
+
+### Task Agent Prompt Template
+
+For each hole, spawn a Task agent with:
+
+```
+Fill this SLOP hole:
+
+Hole: (hole <Type> "<prompt>" :context (<ids>) :required (<ids>))
+File: <filename.slop>
+Function context: <enclosing function with annotations>
+
+Generate a valid implementation using ONLY:
+- Identifiers in :context
+- Built-in operators
+- New bindings you create (let, for, match)
+
+ALL identifiers in :required MUST appear in your implementation.
+
+After generating, validate with:
+slop check-hole '<your-implementation>' -t '<Type>' -c <filename.slop>
+
+If validation fails, fix and retry. Return ONLY the validated implementation or "FAILED" if unable after 2 attempts.
+```
+
 ## MANDATORY: Validate Every Hole
 
 You MUST run `slop check-hole` for EVERY hole implementation before writing the file.
@@ -263,19 +315,53 @@ Run `slop ref` for the complete language reference.
 
 ## Process
 
-1. Read the file
-2. For each hole:
-   - Parse the hole's Type, prompt, :context, and :required
-   - Review the enclosing function's @intent, @spec, @pre, @post, @example
-   - Generate an implementation using ONLY :context identifiers and built-ins
-   - Ensure all :required identifiers appear in the output
-   - **MUST validate** by running:
-     ```bash
-     slop check-hole '<implementation>' -t '<HoleType>' -c <original-file.slop>
-     ```
-   - If validation fails, fix and re-validate until it passes
-3. **ONLY after ALL holes pass validation**, write the filled file
-4. Run `slop check` on the final file to confirm
+1. **Read and parse the file**
+   - Run `slop parse <file> --holes` to list all holes with their tiers
+   - Extract each hole's Type, prompt, :context, :required, and :complexity
+
+2. **Launch parallel Task agents by tier**
+   - Group holes by complexity tier
+   - For each hole, spawn a Task agent with the appropriate model:
+     - `model: "haiku"` for tier-1
+     - `model: "sonnet"` for tier-2 and tier-3
+     - `model: "opus"` for tier-4 (use sonnet if opus unavailable)
+   - Include the enclosing function context (@intent, @spec, @pre, @post, @example)
+   - Set `run_in_background: true` to run all holes in parallel
+
+3. **Collect results and handle escalation**
+   - Use TaskOutput to retrieve each agent's result
+   - If an agent returns "FAILED" after 2 attempts:
+     - Escalate to next model tier (haiku→sonnet→opus)
+     - Spawn a new Task agent with the higher model
+   - Track which holes succeeded and which need escalation
+
+4. **Validate all implementations**
+   - For each returned implementation, verify it passed `slop check-hole`
+   - If any validation is missing or failed, re-run validation
+
+5. **Write the filled file**
+   - **ONLY after ALL holes have validated implementations**, write the file
+   - Replace each `(hole ...)` with its validated implementation
+   - Keep all annotations, types, and structure intact
+
+6. **Final verification**
+   - Run `slop check` on the completed file to confirm type correctness
+
+### Example: Parallel Execution
+
+Given a file with 3 holes:
+```slop
+(hole Int "trivial add" :complexity tier-1 ...)      ; → haiku
+(hole Bool "moderate check" :complexity tier-2 ...)  ; → sonnet
+(hole Result "complex algo" :complexity tier-4 ...)  ; → opus
+```
+
+Launch 3 Task agents in parallel (single message, multiple tool calls):
+- Task 1: model=haiku, hole 1
+- Task 2: model=sonnet, hole 2
+- Task 3: model=opus, hole 3
+
+If Task 1 (haiku) fails twice, spawn Task 4 with model=sonnet for that hole.
 
 ### Validation Example
 
