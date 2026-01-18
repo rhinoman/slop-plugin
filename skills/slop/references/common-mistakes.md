@@ -4,8 +4,8 @@ These functions/patterns do NOT exist in SLOP - use the alternatives:
 
 | Don't Use | Use Instead |
 |-----------|-------------|
-| `print-int n` | `(println (int-to-string arena n))` |
-| `print-float n` | `(println (float-to-string arena n))` |
+| `print-int n` | `(println n)` - print accepts Int directly |
+| `print-float n` | `(println n)` - print accepts Float directly |
 | `(println enum-value)` | Use `match` to print different strings |
 | `arena` outside with-arena | Wrap code in `(with-arena size ...)` |
 | `(block ...)` | `(do ...)` for sequencing |
@@ -180,17 +180,22 @@ For simple enums (no data), use bare variant names in match:
 
 ## I/O
 
-### Only Strings Can Be Printed
+### Print Accepts Basic Types
+
+`print` (no newline) and `println` (with newline) accept String, Int, Bool, or Float directly:
 
 ```lisp
-;; WRONG
-(println 42)
-(println my-float)
+;; These all work - type is inferred
+(println 42)           ; prints "42\n"
+(println 3.14)         ; prints "3.14\n"
+(println true)         ; prints "true\n"
+(println "hello")      ; prints "hello\n"
 
-;; CORRECT
-(println (int-to-string arena 42))
+;; print omits the newline
+(print "x = ")
+(println x)            ; prints "x = 42\n"
 
-;; For enums, use match
+;; For enums, use match to print meaningful strings
 (match status
   (Active (println "active"))
   (Inactive (println "inactive")))

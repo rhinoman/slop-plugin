@@ -387,8 +387,8 @@ SLOP                    C
 (with-arena size body)   ; Scoped arena, implicit 'arena' var
 (sizeof Type) (addr expr) (deref ptr)
 
-;; I/O (strings only)
-(print str) (println str)
+;; I/O (String, Int, Bool, or Float - type inferred)
+(print val) (println val)
 
 ;; Strings
 (int-to-string arena n)  ; Int -> String
