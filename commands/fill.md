@@ -6,6 +6,21 @@ Read the specified SLOP file and fill each `(hole ...)` expression with a valid 
 
 **CRITICAL: Use exact SLOP syntax. SLOP is NOT Scheme/Lisp.**
 
+## Reference Resources
+
+If `SLOP_HOME` is set, consult the standard library and examples for patterns:
+
+```bash
+# Standard library for implementation patterns
+slop doc $SLOP_HOME/lib/std/io/file.slop         # File I/O
+slop doc $SLOP_HOME/lib/std/strlib/strlib.slop   # String utilities
+slop doc $SLOP_HOME/lib/std/thread/thread.slop   # Concurrency
+
+# Examples and spec
+ls $SLOP_HOME/examples/
+cat $SLOP_HOME/spec/REFERENCE.md                 # Quick reference
+```
+
 ## Parallel Hole Filling with Tiered Models
 
 Fill holes in parallel using the Task tool, with model selection based on complexity tier:

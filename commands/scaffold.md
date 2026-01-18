@@ -8,6 +8,23 @@ Create SLOP code where implementations are stubbed out using `(hole ...)` expres
 
 Run `slop ref` for the complete language reference if needed.
 
+## Reference Resources
+
+If `SLOP_HOME` is set, use these resources for reference:
+
+```bash
+# Standard library modules
+slop doc $SLOP_HOME/lib/std/io/file.slop         # File I/O
+slop doc $SLOP_HOME/lib/std/os/env.slop          # Environment variables
+slop doc $SLOP_HOME/lib/std/strlib/strlib.slop   # String utilities
+slop doc $SLOP_HOME/lib/std/math/mathlib.slop    # Math functions
+slop doc $SLOP_HOME/lib/std/thread/thread.slop   # Concurrency primitives
+
+# Examples and spec
+ls $SLOP_HOME/examples/                          # List example code
+cat $SLOP_HOME/spec/LANGUAGE.md                  # Full language spec
+```
+
 ## Required Syntax
 
 ### Module Structure

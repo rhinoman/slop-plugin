@@ -524,6 +524,40 @@ slop check path/to/file.slop
 - Files with unfilled holes will show `UnfilledHoleError` - expected for scaffolds
 - All other errors (type errors, syntax errors, undefined references) should be fixed
 
+## SLOP_HOME Environment Variable
+
+The `SLOP_HOME` environment variable points to the SLOP distribution directory. Use it to access:
+
+```
+$SLOP_HOME/lib/std/     # Standard library modules
+$SLOP_HOME/examples/    # Code samples and reference implementations
+$SLOP_HOME/spec/        # Complete language specification and reference
+```
+
+**Standard library modules:**
+
+| Module | Path | Description |
+|--------|------|-------------|
+| io | `lib/std/io/file.slop` | File I/O operations |
+| os | `lib/std/os/env.slop` | Environment variables |
+| strlib | `lib/std/strlib/strlib.slop` | String utilities |
+| math | `lib/std/math/mathlib.slop` | Math functions (FFI to math.h) |
+| thread | `lib/std/thread/thread.slop` | Concurrency primitives |
+
+To explore the standard library or examples, use `slop doc`:
+
+```bash
+slop doc $SLOP_HOME/lib/std/thread/thread.slop    # View thread library docs
+slop doc $SLOP_HOME/lib/std/strlib/strlib.slop    # View string utils docs
+```
+
+For the full language spec, read the spec files directly:
+
+```bash
+cat $SLOP_HOME/spec/LANGUAGE.md      # Complete language specification
+cat $SLOP_HOME/spec/REFERENCE.md     # Quick reference for code generation
+```
+
 ## CLI Commands
 
 ### Installation
