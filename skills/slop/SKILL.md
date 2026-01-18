@@ -589,7 +589,18 @@ slop build file.slop -o binary         # Full build (requires cc)
 slop derive schema.json -o types.slop  # Generate types from schema
 slop fill file.slop -o filled.slop     # Fill holes with LLM
 slop test file.slop                    # Run @example and @property tests
+slop format file.slop                  # Format SLOP source code
 ```
+
+### Documentation Generation
+
+```bash
+slop doc file.slop                     # Generate markdown docs to stdout
+slop doc file.slop -o docs.md          # Write to file
+slop doc file.slop -f json             # Output as JSON
+```
+
+Extracts `@intent`, `@spec`, `@pre`, `@post`, `@example` annotations into readable documentation.
 
 ### Language Reference (for AI)
 
