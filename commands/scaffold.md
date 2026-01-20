@@ -161,6 +161,40 @@ cat $SLOP_HOME/spec/LANGUAGE.md                  # Full language spec
 - Entry point `main` must return `Int` (exit code), not `Unit`
 - **File placement**: If a `src/` directory exists in the project, place generated module files there (e.g., `src/mymodule.slop`). Otherwise, place files in the project root.
 
+## Structural Editing Requirements
+
+Follow PAREDIT MODE rules when generating SLOP code to ensure balanced syntax.
+
+### Paren Audit Requirement
+
+Before ANY SLOP code block, insert a `<slop-paren-audit>` counting parentheses:
+
+```
+<slop-paren-audit>
+Line 1: (module example  →  ( = 1, ) = 0
+Line 2:   (export main)  →  ( = 1, ) = 1
+Line 3:   (fn main ()    →  ( = 2, ) = 1
+...
+Total: ( = 15, ) = 15 ✓
+</slop-paren-audit>
+```
+
+### Structural Change Descriptions
+
+When modifying existing code, describe the structural operation BEFORE showing code:
+
+- "**wrap** the expression in a `let` binding"
+- "**splice** the inner `do` block to flatten"
+- "**slurp** the next form into the `if` branch"
+
+### Atomic Units
+
+Treat these as indivisible when editing:
+- `@`-forms (`@intent`, `@spec`, `@pre`, `@post`, `@example`)
+- `(hole ...)` expressions
+- `(fn ...)`, `(type ...)`, `(module ...)`, `(ffi ...)` declarations
+- Infix `{...}` blocks within contracts
+
 ## Output
 
 Generate the complete `.slop` file following the exact syntax above.

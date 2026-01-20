@@ -183,6 +183,46 @@ Before writing each implementation, explicitly verify:
 3. **:required**: ALL listed identifiers MUST appear in your output
 4. **Contracts**: Must satisfy `@pre`, `@post`, and `@example` annotations
 
+## Structural Editing Awareness
+
+When filling holes, maintain balanced structure and follow PAREDIT MODE rules.
+
+### Hole Replacement is Atomic
+
+Treat the `(hole ...)` expression and its replacement as an atomic swap:
+
+```
+BEFORE: →(hole Int "compute sum" :context (items))←
+AFTER:  →(let ((mut sum 0))
+           (for-each (x items)
+             (set! sum (+ sum x)))
+           sum)←
+```
+
+The replacement expression must be syntactically complete and balanced.
+
+### Paren Audit After Generation
+
+After generating each implementation, perform a paren audit:
+
+```
+<slop-paren-audit>
+Implementation for "compute sum":
+(let ((mut sum 0))         →  ( = 2, ) = 1
+  (for-each (x items)      →  ( = 1, ) = 1
+    (set! sum (+ sum x)))  →  ( = 2, ) = 3
+  sum)                     →  ( = 0, ) = 1
+Total: ( = 5, ) = 5 ✓
+</slop-paren-audit>
+```
+
+### Preserve Surrounding Structure
+
+When replacing a hole:
+- Keep all `@`-annotations intact
+- Maintain the function's overall structure
+- Ensure the replacement integrates cleanly with surrounding code
+
 ## SLOP Implementation Syntax
 
 ### Conditionals

@@ -19,6 +19,56 @@ Machines: Handle HOW (implementation, verification, compilation)
 Type system: Catch errors early (range bounds, exhaustive matching, contract violations)
 ```
 
+## SLOP PAREDIT MODE
+
+When generating or editing SLOP code, follow these structural editing rules to ensure syntactically correct output.
+
+### Rules
+
+1. **Balanced parentheses** - ALL code must have perfectly balanced `(` and `)`. Count obsessively.
+
+2. **Structural editing terminology** - Describe changes using structural operations BEFORE showing code:
+   - **slurp**: Expand sexp to include next sibling
+   - **barf**: Expel last child from sexp
+   - **splice**: Remove surrounding parens, keeping children
+   - **raise**: Replace parent with this sexp
+   - **wrap**: Surround expression with new parens
+   - **unwrap**: Remove one level of parens
+   - **kill-sexp**: Delete entire balanced expression
+
+3. **`<slop-paren-audit>` requirement** - Before ANY SLOP code block, insert an audit:
+   ```
+   <slop-paren-audit>
+   Line 1: ( = 3, ) = 3
+   Line 2: ( = 2, ) = 2
+   Total: ( = 5, ) = 5 ✓
+   </slop-paren-audit>
+   ```
+
+4. **BEFORE/AFTER structure** - When editing existing code, show markers:
+   ```
+   BEFORE: →( target-sexp )←
+   AFTER:  →( new-sexp )←
+   ```
+
+5. **Atomic units** - Treat these as indivisible:
+   - `@`-forms: `(@intent ...)`, `(@spec ...)`, `(@pre ...)`, etc.
+   - `(hole ...)` expressions
+   - `(fn ...)`, `(type ...)`, `(module ...)`, `(ffi ...)` declarations
+
+6. **Infix `{}` as unit** - Treat entire `{infix conditions}` as one balanced sexp unit:
+   ```slop
+   (@pre {x > 0 and x < 100})  ; {} is atomic
+   ```
+
+7. **Refuse risky edits** - If a requested edit risks breaking structure, refuse and suggest the structural equivalent. Never produce unbalanced code.
+
+8. **SLOP idioms**:
+   - Keep `@`-contracts together at top of function body
+   - Indent generously (2 spaces per level)
+   - Align `let` bindings vertically
+   - One form per line for readability
+
 ## Quick Reference
 
 ### Syntax
@@ -191,6 +241,32 @@ Examples are especially important - they serve as:
 (@derived-from "path")            ; Source tracking
 (@generated-by src :version v)    ; Generation metadata
 (@requires category :prompt "..." (fn-sigs...))  ; Requirements
+(@loop-invariant condition)       ; Loop invariant (verification escape hatch)
+(@invariant condition)            ; Type invariant (on type definitions)
+```
+
+#### Type Invariants
+
+Use `@invariant` on type definitions to specify properties that must always hold:
+
+```slop
+(type BoundedInt (Int 0 .. 100)
+  (@invariant {self >= 0 and self <= 100}))
+
+(type NonEmptyList (List T 1 ..)
+  (@invariant {(list-len self) > 0}))
+```
+
+#### Loop Invariants
+
+Use `@loop-invariant` inside loops for verification:
+
+```slop
+(let ((mut sum 0))
+  (for (i 0 n)
+    (@loop-invariant {sum >= 0})
+    (set! sum (+ sum i)))
+  sum)
 ```
 
 ### Requirements (Scaffold Dependencies)
@@ -245,9 +321,19 @@ Two modes: **generation** (create new code) and **refactoring** (improve existin
   :examples ((in) -> out))
 
 ;; Refactoring mode - improve existing code
+;; Pass existing code as the 3rd positional argument (after Type and prompt)
 (hole Type "prompt"
-  existing-code-expression    ; Pass existing code to improve
+  existing-code-expression    ; The code to refactor/improve
   :complexity tier-3)
+
+;; Example: Refactor for performance
+(hole Int "optimize this loop"
+  (let ((mut sum 0))
+    (for (i 0 n)
+      (set! sum (+ sum (* i i))))
+    sum)
+  :complexity tier-3
+  :context (n))
 ```
 
 **Complexity Tiers:**
