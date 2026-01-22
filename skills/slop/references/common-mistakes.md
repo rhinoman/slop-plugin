@@ -50,6 +50,18 @@ These functions/patterns do NOT exist in SLOP - use the alternatives:
   ((error 'send-on-closed) (handle-send-error)))
 ```
 
+### Variant Names Must Be Unique Across Types
+
+```lisp
+;; WRONG - compile error: duplicate variant names
+(type ApiError (enum not-found invalid))
+(type DbError (enum not-found timeout))   ; 'not-found' already used!
+
+;; CORRECT - prefix variants for uniqueness
+(type ApiError (enum api-not-found api-invalid))
+(type DbError (enum db-not-found db-timeout))
+```
+
 ### Enum Values in Match
 
 For simple enums (no data), use bare variant names in match:

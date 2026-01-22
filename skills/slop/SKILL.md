@@ -543,14 +543,18 @@ When generating SLOP scaffolds (files with holes for LLM filling):
 (fn get-pet ((id (Int 1 ..))) ...)
 ```
 
-### Avoid Overlapping Enum Variants
+### Variant Names Must Be Globally Unique
+
+**Compile-time requirement**: Variant names must be globally unique across all enum and union types in a module. Using the same variant name in different types will result in a compile error.
+
 ```lisp
-;; BAD: Same variant in multiple enums causes type ambiguity
+;; COMPILE ERROR: 'bad-request' and 'not-found' used in multiple types
 (type ApiError (enum bad-request not-found))
 (type HttpStatus (enum ok bad-request not-found))
 
-;; GOOD: Unique names
+;; CORRECT: Unique variant names across all types
 (type ApiError (enum api-bad-request api-not-found))
+(type HttpStatus (enum http-ok http-bad-request http-not-found))
 ```
 
 ### Quote Enum Variants in Code
