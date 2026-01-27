@@ -9,7 +9,52 @@ description: |
 
 # SLOP Language Skill
 
-SLOP is designed for hybrid generation where humans specify intent and machines generate code.
+SLOP (Symbolic LLM-Optimized Programming) is a language designed for hybrid human-machine code generation. It uses S-expression syntax and transpiles to C.
+
+## Resources
+
+The `SLOP_HOME` environment variable points to the SLOP distribution:
+
+| Location | Contents |
+|----------|----------|
+| `$SLOP_HOME/spec/LANGUAGE.md` | Complete language specification |
+| `$SLOP_HOME/spec/REFERENCE.md` | Quick reference for code generation |
+| `$SLOP_HOME/lib/std/` | Standard library modules |
+| `$SLOP_HOME/examples/` | Code samples and reference implementations |
+
+**Standard library modules:**
+
+| Module | Path | Description |
+|--------|------|-------------|
+| io | `lib/std/io/file.slop` | File I/O operations |
+| os | `lib/std/os/env.slop` | Environment variables |
+| strlib | `lib/std/strlib/strlib.slop` | String utilities |
+| math | `lib/std/math/mathlib.slop` | Math functions (FFI to math.h) |
+| thread | `lib/std/thread/thread.slop` | Concurrency primitives |
+
+## Tooling
+
+```bash
+# Inspection and documentation
+slop parse file.slop              # Parse and inspect AST
+slop parse file.slop --holes      # Show holes in file
+slop doc file.slop                # Generate documentation from annotations
+slop ref                          # Full language reference (for AI)
+slop ref types                    # Type system reference
+slop ref --list                   # List available topics
+
+# Verification
+slop check file.slop              # Type check
+slop verify file.slop             # Verify contracts with Z3
+
+# Building
+slop transpile file.slop -o out.c # Transpile to C
+slop build file.slop -o binary    # Full build (requires cc)
+
+# Code generation
+slop fill file.slop -o filled.slop  # Fill holes with LLM
+slop derive schema.json -o types.slop  # Generate types from schema
+```
 
 ## Philosophy
 
@@ -485,6 +530,7 @@ SLOP                    C
 (list-new arena Type)           ; Create empty mutable list
 (list Type e1 e2...)            ; Immutable literal
 (list-push list item)           ; Mutates list (requires mut binding)
+(list-pop list)                 ; Remove and return last element -> (Option T)
 (list-get list idx) (list-len list)
 
 ;; Maps
@@ -492,6 +538,16 @@ SLOP                    C
 (map KeyType ValType (k1 v1)...)  ; Immutable literal
 (map-put m k v)                 ; Mutates map (requires mut binding)
 (map-get m k) (map-has m k)
+(map-keys m)                    ; Return list of all keys
+(map-remove m k)                ; Remove key from mutable map
+
+;; Sets
+(set-new arena ElementType)     ; Create empty mutable set
+(set Type e1 e2...)             ; Immutable set literal
+(set-put set elem)              ; Add element to set
+(set-has set elem)              ; Check if element exists -> Bool
+(set-remove set elem)           ; Remove element from set
+(set-elements set)              ; Get all elements as list
 
 ;; Result
 (ok val) (error 'variant) (is-ok r) (unwrap r)
@@ -613,40 +669,6 @@ slop check path/to/file.slop
 **Expected behavior with holes:**
 - Files with unfilled holes will show `UnfilledHoleError` - expected for scaffolds
 - All other errors (type errors, syntax errors, undefined references) should be fixed
-
-## SLOP_HOME Environment Variable
-
-The `SLOP_HOME` environment variable points to the SLOP distribution directory. Use it to access:
-
-```
-$SLOP_HOME/lib/std/     # Standard library modules
-$SLOP_HOME/examples/    # Code samples and reference implementations
-$SLOP_HOME/spec/        # Complete language specification and reference
-```
-
-**Standard library modules:**
-
-| Module | Path | Description |
-|--------|------|-------------|
-| io | `lib/std/io/file.slop` | File I/O operations |
-| os | `lib/std/os/env.slop` | Environment variables |
-| strlib | `lib/std/strlib/strlib.slop` | String utilities |
-| math | `lib/std/math/mathlib.slop` | Math functions (FFI to math.h) |
-| thread | `lib/std/thread/thread.slop` | Concurrency primitives |
-
-To explore the standard library or examples, use `slop doc`:
-
-```bash
-slop doc $SLOP_HOME/lib/std/thread/thread.slop    # View thread library docs
-slop doc $SLOP_HOME/lib/std/strlib/strlib.slop    # View string utils docs
-```
-
-For the full language spec, read the spec files directly:
-
-```bash
-cat $SLOP_HOME/spec/LANGUAGE.md      # Complete language specification
-cat $SLOP_HOME/spec/REFERENCE.md     # Quick reference for code generation
-```
 
 ## CLI Commands
 

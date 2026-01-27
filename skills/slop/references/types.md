@@ -127,9 +127,15 @@ Access bytes fields directly:
 ;; Map literal
 (map ("key1" value1) ("key2" value2))
 
-;; Example
+;; Set literal
+(set Type elem1 elem2 ...)
+
+;; Examples
 (let ((scores (map ("alice" 100) ("bob" 85))))
   (map-get scores "alice"))  ; → (some 100)
+
+(let ((tags (set String "rust" "go" "slop")))
+  (set-has tags "slop"))     ; → true
 ```
 
 ## Concurrency Types
@@ -267,7 +273,7 @@ that expect `char*` parameters:
 
 ## Collection Mutability
 
-**Collection literals are immutable.** To mutate a collection, use `list-new`/`map-new` with a `mut` binding:
+**Collection literals are immutable.** To mutate a collection, use `list-new`/`map-new`/`set-new` with a `mut` binding:
 
 ```
 ;; Immutable - cannot use list-push
@@ -279,6 +285,11 @@ that expect `char*` parameters:
   (list-push items 1)           ; OK: items is mutable
   (list-push items 2)
   items)
+
+;; Mutable set
+(let ((mut seen (set-new arena Int)))
+  (set-put seen 42)
+  (set-has seen 42))            ; → true
 ```
 
 ## Collection Literal Type Inference

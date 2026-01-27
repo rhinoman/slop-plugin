@@ -60,8 +60,9 @@ echo '(ok val)' | slop check-hole -t '(Result T E)'
 
 Files with unfilled holes will show `UnfilledHoleError` - this is expected for scaffolds. Fix all other errors.
 
-## Slash Commands
+## Skills and Commands
 
+- `/slop` - Load SLOP language awareness (syntax, tooling, `$SLOP_HOME` resources, generation guidelines)
 - `/slop:init` - Initialize a new SLOP project with `slop.toml`
 - `/slop:scaffold <description>` - Generate SLOP functions/files with hole expressions as implementation stubs
 - `/slop:fill <file>` - Fill holes in a SLOP file, respecting `:context`, `:required`, and contracts
