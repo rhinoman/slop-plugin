@@ -14,6 +14,7 @@ Create a `slop.toml` configuration file by prompting the user for project detail
    - **Entry point** (default: "src/main.slop")
    - **Output path** (default: "build/<project-name>")
    - **Build type**: executable, static, or shared (default: executable)
+   - **Link libraries** (optional): external libraries to link
 
 3. Ask if they want to configure LLM providers for hole filling (optional)
 

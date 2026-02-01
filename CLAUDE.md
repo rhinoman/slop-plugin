@@ -31,6 +31,9 @@ SLOP uses S-expression syntax and transpiles to C. Key features:
 - **Typed holes**: `(hole Type "prompt")` for incremental LLM generation
 - **Parameter modes**: `in` (read-only), `out` (write-only), `mut` (read-write)
 - **Arena allocation**: Pass `Arena` as first param for allocating functions
+- **Generics**: `@generic (T)` for polymorphic functions
+- **Lambda functions**: `(fn ((param Type)...) body)` for anonymous functions
+- **Self-hosted compiler**: Native binaries with `--python` fallback
 
 ## SLOP Tooling
 
@@ -40,13 +43,22 @@ pip install -e .
 ```
 
 ### Common Commands
+
+Native toolchain is used by default. Use `--python` to fall back to Python.
+
 ```bash
 slop parse file.slop              # Parse and inspect
 slop parse file.slop --holes      # Show holes in file
 slop check file.slop              # Type check
 slop verify file.slop             # Verify contracts with Z3
+slop verify file.slop --mode warn # Warn instead of error
 slop transpile file.slop -o out.c # Transpile to C
 slop build file.slop -o binary    # Full build (requires cc)
+slop build file.slop --library static  # Build as library
+slop test file.slop               # Run @example tests
+slop format file.slop             # Format source code
+slop doc file.slop                # Generate documentation
+slop paths                        # Show resolved SLOP paths
 slop ref                          # Language reference (for AI assistants)
 slop ref --list                   # List reference topics
 ```

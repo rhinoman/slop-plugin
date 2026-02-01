@@ -13,13 +13,16 @@ SLOP (Symbolic LLM-Optimized Programming) is a language designed for hybrid huma
 
 ## Resources
 
-The `SLOP_HOME` environment variable points to the SLOP distribution:
+The `SLOP_HOME` environment variable points to the SLOP distribution. Resolution order: (1) `SLOP_HOME` if set, (2) package-relative paths as fallback.
 
 | Location | Contents |
 |----------|----------|
 | `$SLOP_HOME/spec/LANGUAGE.md` | Complete language specification |
 | `$SLOP_HOME/spec/REFERENCE.md` | Quick reference for code generation |
+| `$SLOP_HOME/spec/VERIFICATION.md` | Verification guide |
 | `$SLOP_HOME/lib/std/` | Standard library modules |
+| `$SLOP_HOME/lib/compiler/` | Self-hosted compiler sources |
+| `$SLOP_HOME/bin/` | Native compiler binaries |
 | `$SLOP_HOME/examples/` | Code samples and reference implementations |
 
 **Standard library modules:**
@@ -31,8 +34,11 @@ The `SLOP_HOME` environment variable points to the SLOP distribution:
 | strlib | `lib/std/strlib/strlib.slop` | String utilities |
 | math | `lib/std/math/mathlib.slop` | Math functions (FFI to math.h) |
 | thread | `lib/std/thread/thread.slop` | Concurrency primitives |
+| path | `lib/std/path/path.slop` | Path manipulation (dirname, join, basename, extension) |
 
 ## Tooling
+
+SLOP is self-hosted: native compiler binaries are used by default. Use `--python` on most commands to fall back to the Python toolchain.
 
 ```bash
 # Inspection and documentation
@@ -42,18 +48,25 @@ slop doc file.slop                # Generate documentation from annotations
 slop ref                          # Full language reference (for AI)
 slop ref types                    # Type system reference
 slop ref --list                   # List available topics
+slop paths                        # Show resolved SLOP paths
 
 # Verification
 slop check file.slop              # Type check
 slop verify file.slop             # Verify contracts with Z3
+slop verify file.slop --mode warn # Warn instead of error on failures
+slop test file.slop               # Run @example and @property tests
 
 # Building
 slop transpile file.slop -o out.c # Transpile to C
 slop build file.slop -o binary    # Full build (requires cc)
+slop build file.slop --library static  # Build as static library
+slop build file.slop --skip-check     # Skip type checking
 
-# Code generation
+# Code generation and formatting
 slop fill file.slop -o filled.slop  # Fill holes with LLM
 slop derive schema.json -o types.slop  # Generate types from schema
+slop format file.slop               # Format SLOP source code
+slop format file.slop --check       # Check formatting (CI)
 ```
 
 ## Philosophy
@@ -126,6 +139,7 @@ When generating or editing SLOP code, follow these structural editing rules to e
 (type Name type-expr)
 (const NAME Type const-expr)
 (fn name ((param Type)...) annotations... body)
+(fn ((param Type)...) body)           ; Lambda (anonymous function)
 ```
 
 ### Constants
@@ -223,6 +237,23 @@ C Mapping: integers → `#define`, others → `static const`.
 ;; See references/types.md for complete type reference
 ```
 
+### Generic Functions
+
+```
+(@generic (T))                   ; Single type parameter
+(@generic (T U))                 ; Multiple type parameters
+
+;; Type variables appear in @spec param/return types
+(fn identity ((in x T))
+  (@generic (T))
+  (@intent "Return the value unchanged")
+  (@spec ((T) -> T))
+  (@pure)
+  x)
+```
+
+At call sites, the type checker unifies argument types to bind type variables and substitutes into the return type.
+
 ### Required Annotations
 
 ```
@@ -242,7 +273,10 @@ Always specify when possible - they are essential to SLOP's verification story.
 (@post condition)          ; Postcondition ($result = return value)
 (@assume condition)        ; Trusted axiom for verification (e.g., FFI behavior)
 (@pure)                    ; No side effects, deterministic
+(@trusted)                 ; Skip verification entirely (for unverifiable functions)
+(@doc "Extended documentation")  ; Detailed docs, emits as C comment
 (@example (args) -> result) ; Executable test case - include multiple!
+(@example :eq eq-fn (args) -> result) ; Test with custom equality function
 (@alloc arena)             ; Function allocates in arena
 (@alloc static)            ; Returns static/global data
 (@alloc none)              ; Does not allocate
@@ -525,6 +559,7 @@ SLOP                    C
 (int-to-string arena n)  ; Int -> String
 (string-new arena str) (string-len s) (string-concat arena a b)
 (string-eq a b) (string-slice s start end) (string-split arena s delim)
+(string-push-char arena s c)  ; Append U8 char to string
 
 ;; Lists
 (list-new arena Type)           ; Create empty mutable list
@@ -695,14 +730,20 @@ slop check file.slop              # Type check a file
 
 ```bash
 slop verify file.slop             # Verify contracts with Z3 (requires z3-solver)
+slop verify file.slop --mode warn # Warn instead of error
+slop verify file.slop --timeout 10 # Set Z3 timeout (seconds)
 ```
 
 The verifier checks:
-- `@pre` and `@post` contract consistency
-- Range type bounds
-- Basic logical properties
+- `@pre` and `@post` contract consistency (path-sensitive)
+- Range type bounds propagation through arithmetic
+- Type invariants (`@invariant`)
+- Record field axioms and union tag axioms
+- Imported function postcondition propagation
+- Six automatic loop patterns (filter, map/transform, count, fold, find-first, nested/join)
+- `@property` auto-propagation as loop invariants
 
-Note: Verifies contract consistency, not full implementation correctness.
+See `$SLOP_HOME/spec/VERIFICATION.md` for the full verification guide.
 
 ### Hole Validation
 
@@ -722,6 +763,9 @@ echo '(ok value)' | slop check-hole -t '(Result T E)'
 ```bash
 slop transpile file.slop -o output.c   # Transpile to C
 slop build file.slop -o binary         # Full build (requires cc)
+slop build file.slop --library static  # Build as static library
+slop build file.slop --library shared  # Build as shared library
+slop build file.slop --skip-check      # Skip type checking (bootstrapping)
 ```
 
 **Build Modes:**
@@ -729,13 +773,19 @@ slop build file.slop -o binary         # Full build (requires cc)
 - **Release**: `-O3 -DNDEBUG` - contract checks removed for speed
 - **Safe**: `-O2 -DSLOP_SAFE` - contract checks with optimization
 
+Most commands accept `--python` to use the Python toolchain instead of native binaries.
+
 ### Other Commands
 
 ```bash
 slop derive schema.json -o types.slop  # Generate types from schema
 slop fill file.slop -o filled.slop     # Fill holes with LLM
 slop test file.slop                    # Run @example and @property tests
+slop test file.slop --rebuild          # Rebuild before testing
 slop format file.slop                  # Format SLOP source code
+slop format file.slop --check          # Check formatting (exit 1 if not)
+slop paths                             # Show resolved SLOP paths
+slop paths -v                          # Verbose (show examples list)
 ```
 
 ### Documentation Generation
@@ -779,6 +829,11 @@ These functions/patterns do NOT exist in SLOP - use the alternatives:
 | `list-add` | `(list-push list elem)` |
 | `map-set` | `(map-put map key val)` |
 | `hash-get` | `(map-get map key)` |
+| `parse-int` | Implement manually or FFI |
+| `json-parse` | Implement manually or FFI |
+| `string-find` | Iterate with for-each |
+| `read-line` | FFI to stdio.h |
+| `sqrt`, `sin`, `cos` | FFI to math.h |
 | Definitions outside module | All `(type)`, `(fn)`, `(const)` inside `(module ...)` |
 
 ### Module Structure

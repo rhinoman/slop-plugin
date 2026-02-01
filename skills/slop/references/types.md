@@ -223,6 +223,37 @@ Channels enable safe communication between threads:
 (type Callback (Fn (Event) -> Unit))
 ```
 
+### Lambda Functions
+
+```
+(fn ((param Type)...) body)      ; Anonymous function
+
+;; Example: passing a lambda to spawn
+(spawn arena (fn () (do-work) 0))
+
+;; Example: as a callback
+(map-values items (fn ((x Int)) (* x 2)))
+```
+
+## Generic Type Parameters
+
+Use `@generic` to declare polymorphic functions:
+
+```
+(@generic (T))                   ; Single type parameter
+(@generic (T U))                 ; Multiple type parameters
+
+(fn first ((in items (List T)))
+  (@generic (T))
+  (@spec (((List T)) -> (Option T)))
+  (@pure)
+  (if (== (list-len items) 0)
+    (none)
+    (list-get items 0)))
+```
+
+Type variables appear in `@spec` param/return types. At call sites, the checker unifies argument types to bind type variables.
+
 ## Utility Types
 
 ### Option
