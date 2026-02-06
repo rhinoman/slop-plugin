@@ -13,6 +13,7 @@ This is a Claude Code plugin for SLOP (Symbolic LLM-Optimized Programming) - a l
 - `skills/slop/SKILL.md` - Main skill definition with language reference and generation guidelines
 - `skills/slop/references/types.md` - Complete type system documentation
 - `skills/slop/references/patterns.md` - Common patterns and idioms
+- `skills/slop/references/common-mistakes.md` - Anti-patterns and common errors
 
 ## Testing the Plugin
 

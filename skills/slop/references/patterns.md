@@ -463,8 +463,8 @@ IMPORTANT: Quote the error variant!
   (@intent "Process items in parallel")
   (@spec ((Arena (List Int)) -> (List Int)))
 
-  (let ((mut threads (list-new arena (Thread Int))))
-    ;; Spawn workers
+  (let ((mut threads (list-new arena (Ptr (Thread Int)))))
+    ;; Spawn workers (closures capture outer variables)
     (for-each (item items)
       (list-push threads
         (spawn arena (fn () (expensive-compute item)))))
@@ -483,48 +483,23 @@ IMPORTANT: Quote the error variant!
   (@intent "Demonstrate channel communication")
   (@spec ((Arena) -> Unit))
 
-  (let ((ch (chan-buffered arena 10)))
-    ;; Producer thread
-    (spawn arena (fn ()
-      (for (i 0 10)
-        (send ch i))
-      (chan-close ch)
-      0))
+  (let ((ch (chan-buffered Int arena 10)))
+    ;; Producer thread (closures capture ch)
+    (let ((producer (spawn arena (fn ()
+        (for (i 0 10)
+          (send ch i))
+        (chan-close ch)
+        0))))
 
-    ;; Consumer (main thread)
-    (let ((mut running true))
-      (while running
-        (match (try-recv ch)
-          ((ok val) (println (int-to-string arena val)))
-          ((error 'closed) (set! running false))
-          ((error 'would-block) unit))))))
-```
-
-### Spawn with Channel
-
-The `spawn-with-chan` function spawns a thread that receives a channel as its argument.
-Useful for worker patterns where the thread communicates via the channel.
-
-```
-;; Worker function signature: takes channel, returns Int
-(fn worker ((ch (Ptr (Chan Int))))
-  (@intent "Process values from channel until closed")
-  (@spec (((Ptr (Chan Int))) -> Int))
-  (let ((mut total 0)
-        (mut running true))
-    (while running
-      (match (try-recv ch)
-        ((ok val) (set! total (+ total val)))
-        ((error 'closed) (set! running false))
-        ((error 'would-block) unit)))  ;; Spin if empty
-    total))
-
-;; Spawn the worker with its channel
-(fn start-worker ((arena Arena))
-  (@intent "Create channel and spawn worker thread")
-  (@spec ((Arena) -> (Ptr ThreadWithChan)))
-  (let ((ch (chan-buffered arena 10)))
-    (spawn-with-chan arena worker ch)))
+      ;; Consumer (main thread)
+      (let ((mut sum 0))
+        (let ((mut running true))
+          (while running
+            (match (recv ch)
+              ((ok val) (set! sum (+ sum val)))
+              ((error 'closed) (set! running false)))))
+        (join producer)
+        sum))))
 ```
 
 ### Worker Pool

@@ -326,14 +326,15 @@ Examples are especially important - they serve as:
 
 #### Type Invariants
 
-Use `@invariant` on type definitions to specify properties that must always hold:
+Use `@invariant` on type definitions to specify relational constraints between fields.
+Invariant expressions use field names directly (not prefixed):
 
 ```slop
-(type BoundedInt (Int 0 .. 100)
-  (@invariant {self >= 0 and self <= 100}))
+(type Graph (record (triples (List Triple)) (size GraphSize))
+  (@invariant (== size (list-len triples))))
 
-(type NonEmptyList (List T 1 ..)
-  (@invariant {(list-len self) > 0}))
+(type Counter (record (count (Int 0 ..)) (max-count (Int 1 ..)))
+  (@invariant (<= count max-count)))
 ```
 
 #### Loop Invariants
@@ -370,6 +371,17 @@ The `@requires` annotation declares dependencies that must be provided before co
 (with-arena 4096
   (let ((data (arena-alloc arena (sizeof Data))))
     ...))  ; Arena freed at end
+
+;; Named arenas (binds custom name instead of 'arena')
+(with-arena :as scratch 4096
+  (arena-alloc scratch 256))  ; Uses 'scratch' instead of 'arena'
+
+;; Nested named arenas for different lifetimes
+(with-arena :as output 8192
+  (with-arena :as scratch 4096
+    (let ((temp (parse scratch input)))
+      (build-result output temp))))
+;; scratch freed first, then output
 
 ;; For allocating functions, pass arena as first param
 (fn create-user ((arena Arena) (name String))
@@ -458,9 +470,16 @@ literal                     ; Literal match
 
 ;; Loops
 (for (i 0 10) body)
-(for-each (x list) body)
+(for-each (x collection) body)       ; Iterate List, Set, or Map (keys only)
+(for-each ((key value) map) body)    ; Iterate Map key-value pairs
 (while cond body)
 (break) (continue) (return expr)
+
+;; for-each collection types:
+;; - List: elements in order
+;; - Set: elements (order undefined)
+;; - Map with (var map): iterates keys only
+;; - Map with ((k v) map): iterates key-value pairs
 
 ;; Data construction
 (record-new Type (f1 v1) (f2 v2))  ; Named fields
@@ -549,7 +568,8 @@ SLOP                    C
 
 ;; Memory
 (arena-new size) (arena-alloc arena size) (arena-free arena)
-(with-arena size body)   ; Scoped arena, implicit 'arena' var
+(with-arena size body)              ; Scoped arena, implicit 'arena' var
+(with-arena :as name size body)     ; Named scoped arena, binds 'name'
 (sizeof Type) (addr expr) (deref ptr)
 
 ;; I/O (String, Int, Bool, or Float - type inferred)
@@ -594,14 +614,13 @@ SLOP                    C
 (now-ms) (sleep-ms ms)
 
 ;; Concurrency (thread library)
-(chan arena)                ; Create unbuffered channel → (Ptr (Chan T))
-(chan-buffered arena cap)   ; Create buffered channel → (Ptr (Chan T))
+(chan Type arena)            ; Create unbuffered channel → (Ptr (Chan T))
+(chan-buffered Type arena cap) ; Create buffered channel → (Ptr (Chan T))
 (chan-close ch)             ; Close channel
 (send ch value)             ; Send value (blocks if full) → (Result Unit ChanError)
 (recv ch)                   ; Receive value (blocks if empty) → (Result T ChanError)
 (try-recv ch)               ; Non-blocking receive → (Result T ChanError)
 (spawn arena func)          ; Spawn thread running func → (Ptr (Thread T))
-(spawn-with-chan arena func ch) ; Spawn thread with channel arg → (Ptr ThreadWithChan)
 (join thread)               ; Wait for thread, get result
 ```
 
@@ -814,8 +833,8 @@ These functions/patterns do NOT exist in SLOP - use the alternatives:
 
 | Don't Use | Use Instead |
 |-----------|-------------|
-| `print-int n` | `(println (int-to-string arena n))` |
-| `print-float n` | `(println (float-to-string arena n))` |
+| `print-int n` | `(println n)` - print/println accept Int directly |
+| `print-float n` | `(println n)` - print/println accept Float directly |
 | `(println enum-value)` | Use `match` to print different strings |
 | `arena` outside with-arena | Wrap code in `(with-arena size ...)` |
 | `(block ...)` | `(do ...)` for sequencing |
@@ -829,7 +848,7 @@ These functions/patterns do NOT exist in SLOP - use the alternatives:
 | `list-add` | `(list-push list elem)` |
 | `map-set` | `(map-put map key val)` |
 | `hash-get` | `(map-get map key)` |
-| `parse-int` | Implement manually or FFI |
+| `parse-int` | `(import strlib (parse-int))` |
 | `json-parse` | Implement manually or FFI |
 | `string-find` | Iterate with for-each |
 | `read-line` | FFI to stdio.h |

@@ -148,22 +148,22 @@ Access bytes fields directly:
 (type WorkerThread (Ptr (Thread Int)))
 ```
 
-Channel and thread creation functions return pointers:
+Channel and thread creation functions return pointers (explicit type argument required):
 ```
-(chan arena)            ; → (Ptr (Chan T))
-(chan-buffered arena n) ; → (Ptr (Chan T))
-(spawn arena func)      ; → (Ptr (Thread T))
+(chan Type arena)            ; → (Ptr (Chan T))
+(chan-buffered Type arena n) ; → (Ptr (Chan T))
+(spawn arena func)           ; → (Ptr (Thread T))
 ```
 
-Channels enable safe communication between threads:
+Channels enable safe communication between threads (closures capture outer variables):
 ```
 (with-arena 4096
-  (let ((ch (chan arena)))
+  (let ((ch (chan Int arena)))
     (spawn arena (fn ()
       (send ch 42)
       0))
     (match (recv ch)
-      ((ok msg) (println (int-to-string arena msg)))
+      ((ok msg) (println msg))
       ((error e) (println "channel error")))))
 ```
 

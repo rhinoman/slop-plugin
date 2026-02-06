@@ -21,7 +21,7 @@ These functions/patterns do NOT exist in SLOP - use the alternatives:
 | `list-add` | `(list-push list elem)` |
 | `map-set` | `(map-put map key val)` |
 | `hash-get` | `(map-get map key)` |
-| `parse-int` | Implement manually or FFI |
+| `parse-int` | `(import strlib (parse-int))` |
 | `json-parse` | Implement manually or FFI |
 | `string-find` | Iterate with for-each |
 
@@ -245,20 +245,20 @@ For simple enums (no data), use bare variant names in match:
   0))
 ```
 
-### Use spawn-with-chan for Channel Workers
+### Channel Creation Requires Explicit Type
 
 ```lisp
-;; WRONG - channel not accessible in spawned thread
+;; WRONG - missing type parameter
 (let ((ch (chan arena)))
+  ...)
+
+;; CORRECT - explicit type argument required
+(let ((ch (chan Int arena)))
   (spawn arena (fn ()
-    (send ch 42)   ; ch not in scope!
+    (send ch 42)   ; closures capture outer variables
     0)))
 
-;; CORRECT - use spawn-with-chan to pass channel
-(let ((ch (chan arena)))
-  (spawn-with-chan arena
-    (fn ((ch (Ptr (Chan Int))))
-      (send ch 42)
-      0)
-    ch))
+;; Buffered channels also need type
+(let ((ch (chan-buffered Int arena 10)))
+  ...)
 ```
