@@ -34,6 +34,8 @@ The verifier checks each function independently with path-sensitive reasoning:
 - **Range types** — bounds propagated through arithmetic
 - **Record field axioms** — `(record-new Type (field value))` implies `(. $result field) == value`
 - **Imported function postconditions** — called functions' `@post` become axioms for callers
+- **Equality function semantics** — `*-eq` functions with `(@post (== $result (== a b)))` get Z3 axioms
+- **Containment congruence** — nested loops over query results bridge element containment to constructor containment
 
 ### Automatic Loop Analysis
 
@@ -54,7 +56,11 @@ When automatic verification fails:
 
 - **`@assume condition`** — Trust an assertion without proof (for FFI, complex invariants)
 - **`@loop-invariant condition`** — Provide invariant for unrecognized loop patterns
+- **`@callback-assume param expr`** — Declare properties of callback arguments (`$callback-arg` for each arg)
 - **`@trusted`** — Skip verification entirely for a function
+
+**Verifier-only predicates:**
+- `(list-contains lst elem)` — membership test usable in `@post`, `@property`, `@loop-invariant`, `@assume` annotations only (no C codegen)
 
 Use `@assume` sparingly — each is a potential source of unsoundness.
 

@@ -355,11 +355,14 @@ Run `slop ref` for the complete language reference.
 - Logic: `and`, `or`, `not`
 - Control: `if`, `cond`, `match`, `let`, `let*`, `do`, `when`, `unless`
 - Loops: `for`, `for-each`, `while`, `break`, `continue`, `return`
-- Lists: `list-new`, `list-push`, `list-get`, `list-len`, `list`
-- Maps: `map-new`, `map-put`, `map-get`, `map-has`, `map`
-- Strings: `string-new`, `string-len`, `string-concat`, `string-eq`
+- Lists: `list-new`, `list-push`, `list-pop`, `list-get`, `list-len`, `list`
+- Maps: `map-new`, `map-put`, `map-get`, `map-has`, `map-keys`, `map-remove`, `map`
+- Strings: `string-new`, `string-len`, `string-concat`, `string-eq`, `string-split`, `string-push-char`, `int-to-string`
+- Sets: `set-new`, `set-put`, `set-has`, `set-remove`, `set-elements`, `set`
+- I/O: `print`, `println` (accept String, Int, Bool, Float)
 - Results: `ok`, `error`, `is-ok`, `unwrap`, `?`
 - Options: `some`, `none`, `is-some`, `is-none`
+- Memory: `arena-alloc`, `arena-new`, `arena-free`, `with-arena`, `sizeof`, `cast`, `addr`, `deref`
 - Fields: `.`, `set!`, `@`
 
 ## What You Cannot Do

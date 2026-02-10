@@ -24,6 +24,8 @@ These functions/patterns do NOT exist in SLOP - use the alternatives:
 | `parse-int` | `(import strlib (parse-int))` |
 | `json-parse` | Implement manually or FFI |
 | `string-find` | Iterate with for-each |
+| `float-to-string` directly | `(import strlib (float-to-string))` then `(float-to-string arena f)` |
+| Definitions outside module | All `(type)`, `(fn)`, `(const)` go inside `(module ...)` |
 
 ## Quoting Errors
 

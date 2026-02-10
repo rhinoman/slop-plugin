@@ -139,6 +139,7 @@ When generating or editing SLOP code, follow these structural editing rules to e
 (type Name type-expr)
 (const NAME Type const-expr)
 (fn name ((param Type)...) annotations... body)
+(fn name ((param Type)...) annotations... body :c-name "c_name") ; C name override
 (fn ((param Type)...) body)           ; Lambda (anonymous function)
 ```
 
@@ -322,6 +323,7 @@ Examples are especially important - they serve as:
 (@requires category :prompt "..." (fn-sigs...))  ; Requirements
 (@loop-invariant condition)       ; Loop invariant (verification escape hatch)
 (@invariant condition)            ; Type invariant (on type definitions)
+(@callback-assume param expr)    ; Property of callback args ($callback-arg for each arg)
 ```
 
 #### Type Invariants
@@ -348,6 +350,21 @@ Use `@loop-invariant` inside loops for verification:
     (set! sum (+ sum i)))
   sum)
 ```
+
+#### Callback Assumptions
+
+Use `@callback-assume` to declare properties of callback arguments in higher-order functions:
+
+```slop
+(fn for-each-item ((g Graph) (callback (Fn (Item) Unit)))
+  (@intent "Apply callback to each item in graph")
+  (@spec ((Graph (Fn (Item) Unit)) -> Unit))
+  (@callback-assume callback (graph-contains g $callback-arg))
+  ...)
+;; $callback-arg refers to each argument passed to the callback
+```
+
+The verifier desugars callback-taking function calls into `for-each` loops and transforms `@callback-assume` into `(forall (t $result) ...)` axioms for Z3 reasoning.
 
 ### Requirements (Scaffold Dependencies)
 
@@ -502,6 +519,7 @@ literal                     ; Literal match
 ;; Declare C functions and constants
 (ffi "header.h"
   (func-name ((param Type)...) ReturnType)  ; Function
+  (func-name ((param Type)...) ReturnType :variadic) ; Variadic function
   (CONST_NAME Type)                          ; Constant (no params = constant)
   ...)
 
@@ -533,6 +551,7 @@ Example:
   (SEEK_SET Int)                             ; Constant
   (SEEK_CUR Int)
   (EOF Int)
+  (printf ((fmt (Ptr Char))) Int :variadic)  ; Variadic C function
   (fclose ((file (Ptr Void))) Int))          ; Function
 
 (ffi "unistd.h"
@@ -575,11 +594,15 @@ SLOP                    C
 ;; I/O (String, Int, Bool, or Float - type inferred)
 (print val) (println val)
 
-;; Strings
+;; Strings (builtins)
 (int-to-string arena n)  ; Int -> String
 (string-new arena str) (string-len s) (string-concat arena a b)
 (string-eq a b) (string-slice s start end) (string-split arena s delim)
 (string-push-char arena s c)  ; Append U8 char to string
+
+;; Strings (strlib - requires import)
+;; (import strlib (starts-with ends-with contains trim parse-int float-to-string))
+;; float-to-string: (float-to-string arena f) ; Float -> String
 
 ;; Lists
 (list-new arena Type)           ; Create empty mutable list
@@ -761,6 +784,11 @@ The verifier checks:
 - Imported function postcondition propagation
 - Six automatic loop patterns (filter, map/transform, count, fold, find-first, nested/join)
 - `@property` auto-propagation as loop invariants
+- `@callback-assume` for higher-order function reasoning
+- `list-contains` verifier-only predicate (usable in annotations, no runtime representation)
+
+**Verifier-only predicates:**
+- `(list-contains lst elem)` — membership test for `@post`, `@property`, `@loop-invariant`, `@assume` annotations only (no C codegen)
 
 See `$SLOP_HOME/spec/VERIFICATION.md` for the full verification guide.
 
